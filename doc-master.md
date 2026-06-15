@@ -157,10 +157,10 @@ Campo libre para gastos que no encajan en otras categorías.
 
 ### Estructura general
 
-Navegación inferior fija con **3 botones** (estilo tab bar):
+Navegación inferior fija con **4 botones** (estilo tab bar):
 
 ```
-[ 🏠 Inicio ]   [ 🚗 Vehículos ]   [ 👤 Cuenta ]
+[ 🏠 Inicio ]   [ 📋 Historial ]   [ 🚗 Vehículos ]   [ 👤 Cuenta ]
 ```
 
 **Botón flotante de IA (FAB):**
@@ -629,6 +629,20 @@ Un registro por cada tanqueo con estación asociada. Sin user_id por diseño.
 - [ ] Precio del plan Pro en COP
 - [ ] Política de datos y privacidad
 - [ ] Estrategia de lanzamiento y adquisición de primeros usuarios
+
+---
+
+## 13. Fixes técnicos pendientes
+
+### 🔧 Dev Build para notificaciones nativas (Android)
+Expo Go muestra un warning `expo-notifications: Android Push notificati...` porque las push notifications remotas no están soportadas en Expo Go. Las notificaciones locales programadas sí funcionan.
+
+**Fix:** Generar un development build con `expo-dev-client`:
+```bash
+npx expo install expo-dev-client
+npx expo run:android
+```
+Esto habilita soporte nativo completo de notificaciones y elimina el warning. Pendiente para cuando se requiera probar notificaciones en producción.
 
 ---
 

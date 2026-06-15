@@ -5,6 +5,8 @@ import { Platform } from 'react-native';
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -72,7 +74,10 @@ export async function scheduleDocumentReminder(
             body: `El ${typeLabel} de tu ${vehicleName} (${plate}) vencerá en ${daysBefore} días. ¡Regístralo a tiempo!`,
             data: { recordId, type },
           },
-          trigger: triggerDate,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: triggerDate,
+          },
         });
       } catch (error) {
         console.error(`Error scheduling notification for ${daysBefore} days:`, error);

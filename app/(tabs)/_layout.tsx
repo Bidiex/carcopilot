@@ -38,6 +38,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="history"
+        options={{
+          title: "Historial",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              size={24}
+              name={focused ? "time" : "time-outline"}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="vehicles"
         options={{
           title: "Vehículos",
