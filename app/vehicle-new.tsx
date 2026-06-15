@@ -79,6 +79,7 @@ export default function VehicleNewScreen() {
   const [year, setYear] = useState("");
   const [plate, setPlate] = useState("");
   const [odometer, setOdometer] = useState("");
+  const [batteryCapacity, setBatteryCapacity] = useState("");
   const [vehicleType, setVehicleType] = useState<VehicleType>("car");
   const [propulsion, setPropulsion] = useState<PropulsionType>("combustion");
 
@@ -90,6 +91,7 @@ export default function VehicleNewScreen() {
   const [yearError, setYearError] = useState("");
   const [plateError, setPlateError] = useState("");
   const [odometerError, setOdometerError] = useState("");
+  const [batteryCapacityError, setBatteryCapacityError] = useState("");
 
   const validate = () => {
     let isValid = true;
@@ -149,6 +151,17 @@ export default function VehicleNewScreen() {
       isValid = false;
     }
 
+    if (propulsion === "electric") {
+      const batNum = parseFloat(batteryCapacity);
+      if (!batteryCapacity) {
+        setBatteryCapacityError("La capacidad de batería es requerida");
+        isValid = false;
+      } else if (isNaN(batNum) || batNum <= 0) {
+        setBatteryCapacityError("La capacidad debe ser mayor a 0");
+        isValid = false;
+      }
+    }
+
     return isValid;
   };
 
@@ -174,6 +187,7 @@ export default function VehicleNewScreen() {
         plate: plate.trim() ? plate.toUpperCase() : null,
         year: parseInt(year),
         initial_odometer: parseFloat(odometer),
+        battery_capacity_kwh: propulsion === "electric" ? parseFloat(batteryCapacity) : null,
         is_active: true,
       });
 
@@ -353,6 +367,17 @@ export default function VehicleNewScreen() {
             keyboardType="numeric"
             error={odometerError}
           />
+
+          {propulsion === "electric" && (
+            <Input
+              label="Capacidad de Batería (kWh) *"
+              placeholder="Ej: 40"
+              value={batteryCapacity}
+              onChangeText={setBatteryCapacity}
+              keyboardType="numeric"
+              error={batteryCapacityError}
+            />
+          )}
 
           <Button
             title="Crear Vehículo"

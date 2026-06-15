@@ -96,10 +96,26 @@ export default function HomeScreen() {
             .order("issue_date", { ascending: false })
             .limit(3);
 
+          const { data: chargeLogs } = await supabase
+            .from("electric_charge_logs")
+            .select("id, date, amount_cop, kwh_charged, odometer, consumption_km_kwh")
+            .eq("vehicle_id", activeVeh.id)
+            .order("date", { ascending: false })
+            .limit(3);
+
+          const { data: otherLogs } = await supabase
+            .from("other_expenses")
+            .select("id, date, amount_cop, description")
+            .eq("vehicle_id", activeVeh.id)
+            .order("date", { ascending: false })
+            .limit(3);
+
           const allLogs: any[] = [];
           if (fuelLogs) allLogs.push(...fuelLogs.map(l => ({ ...l, record_type: 'fuel' })));
           if (maintLogs) allLogs.push(...maintLogs.map(l => ({ ...l, record_type: 'maintenance' })));
           if (taxLogs) allLogs.push(...taxLogs.map(l => ({ ...l, record_type: 'tax', date: l.issue_date })));
+          if (chargeLogs) allLogs.push(...chargeLogs.map(l => ({ ...l, record_type: 'electric-charge' })));
+          if (otherLogs) allLogs.push(...otherLogs.map(l => ({ ...l, record_type: 'other-expense' })));
 
           allLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
           
@@ -130,10 +146,24 @@ export default function HomeScreen() {
             .eq("vehicle_id", activeVeh.id)
             .gte("issue_date", dateLimit);
 
+          const { data: monthlyCharges } = await supabase
+            .from("electric_charge_logs")
+            .select("amount_cop")
+            .eq("vehicle_id", activeVeh.id)
+            .gte("date", dateLimit);
+
+          const { data: monthlyOthers } = await supabase
+            .from("other_expenses")
+            .select("amount_cop")
+            .eq("vehicle_id", activeVeh.id)
+            .gte("date", dateLimit);
+
           const totalSpent =
             (monthlyFuel?.reduce((acc, log) => acc + parseFloat(log.amount_cop), 0) || 0) +
             (monthlyMaint?.reduce((acc, log) => acc + parseFloat(log.amount_cop), 0) || 0) +
-            (monthlyTax?.reduce((acc, log) => acc + parseFloat(log.amount_cop), 0) || 0);
+            (monthlyTax?.reduce((acc, log) => acc + parseFloat(log.amount_cop), 0) || 0) +
+            (monthlyCharges?.reduce((acc, log) => acc + parseFloat(log.amount_cop), 0) || 0) +
+            (monthlyOthers?.reduce((acc, log) => acc + parseFloat(log.amount_cop), 0) || 0);
 
           if (isMounted) {
             setMonthlySpent(totalSpent);
@@ -154,6 +184,13 @@ export default function HomeScreen() {
             .order("odometer", { ascending: false })
             .limit(1);
 
+          const { data: highestChargeOdo } = await supabase
+            .from("electric_charge_logs")
+            .select("odometer")
+            .eq("vehicle_id", activeVeh.id)
+            .order("odometer", { ascending: false })
+            .limit(1);
+
           let currentOdo = activeVeh.initial_odometer;
           if (highestFuelOdo && highestFuelOdo.length > 0) {
             currentOdo = Math.max(currentOdo, parseFloat(highestFuelOdo[0].odometer));
@@ -161,29 +198,54 @@ export default function HomeScreen() {
           if (highestMaintOdo && highestMaintOdo.length > 0) {
             currentOdo = Math.max(currentOdo, parseFloat(highestMaintOdo[0].odometer));
           }
+          if (highestChargeOdo && highestChargeOdo.length > 0) {
+            currentOdo = Math.max(currentOdo, parseFloat(highestChargeOdo[0].odometer));
+          }
 
           if (isMounted) {
             setCurrentOdometer(currentOdo);
           }
 
           // 6. Calcular promedio de consumo
-          const { data: consumptionLogs } = await supabase
-            .from("fuel_logs")
-            .select("consumption_km_gal")
-            .eq("vehicle_id", activeVeh.id)
-            .not("consumption_km_gal", "is", null);
+          if (activeVeh.propulsion === "electric") {
+            const { data: consumptionLogs } = await supabase
+              .from("electric_charge_logs")
+              .select("consumption_km_kwh")
+              .eq("vehicle_id", activeVeh.id)
+              .not("consumption_km_kwh", "is", null);
 
-          if (consumptionLogs && consumptionLogs.length > 0) {
-            const sumCons = consumptionLogs.reduce(
-              (acc, log) => acc + parseFloat(log.consumption_km_gal),
-              0
-            );
-            if (isMounted) {
-              setAverageConsumption(sumCons / consumptionLogs.length);
+            if (consumptionLogs && consumptionLogs.length > 0) {
+              const sumCons = consumptionLogs.reduce(
+                (acc, log) => acc + parseFloat(log.consumption_km_kwh),
+                0
+              );
+              if (isMounted) {
+                setAverageConsumption(sumCons / consumptionLogs.length);
+              }
+            } else {
+              if (isMounted) {
+                setAverageConsumption(null);
+              }
             }
           } else {
-            if (isMounted) {
-              setAverageConsumption(null);
+            const { data: consumptionLogs } = await supabase
+              .from("fuel_logs")
+              .select("consumption_km_gal")
+              .eq("vehicle_id", activeVeh.id)
+              .not("consumption_km_gal", "is", null);
+
+            if (consumptionLogs && consumptionLogs.length > 0) {
+              const sumCons = consumptionLogs.reduce(
+                (acc, log) => acc + parseFloat(log.consumption_km_gal),
+                0
+              );
+              if (isMounted) {
+                setAverageConsumption(sumCons / consumptionLogs.length);
+              }
+            } else {
+              if (isMounted) {
+                setAverageConsumption(null);
+              }
             }
           }
         } catch {
@@ -243,6 +305,11 @@ export default function HomeScreen() {
 
         {/* Dynamic Summary Card (Gradient) */}
         {activeVehicle ? (
+        <TouchableOpacity
+          onPress={() => router.push("/reports" as any)}
+          activeOpacity={0.9}
+          style={styles.summaryCardContainer}
+        >
           <Card variant="primary" style={styles.summaryCard}>
             <View style={styles.cardHeader}>
               <Text variant="caption" color="white" style={styles.cardSubtitle}>
@@ -282,13 +349,14 @@ export default function HomeScreen() {
                   </Text>
                   <Text variant="caption" color="white" weight="700">
                     {averageConsumption
-                      ? `${averageConsumption.toFixed(1)} km/gal`
-                      : "-- km/gal"}
+                      ? `${averageConsumption.toFixed(1)} ${activeVehicle.propulsion === "electric" ? "km/kWh" : "km/gal"}`
+                      : `-- ${activeVehicle.propulsion === "electric" ? "km/kWh" : "km/gal"}`}
                   </Text>
                 </View>
               </View>
             </View>
           </Card>
+        </TouchableOpacity>
         ) : (
           /* Empty State: No active vehicle */
           <Card variant="secondary" style={styles.emptyVehicleCard}>
@@ -317,14 +385,14 @@ export default function HomeScreen() {
           <View style={[styles.quickActionsGrid, !activeVehicle && { opacity: 0.5 }]}>
             <TouchableOpacity
               disabled={!activeVehicle}
-              onPress={() => router.push("/fuel-log-new")}
+              onPress={() => router.push(activeVehicle?.propulsion === "electric" ? "/electric-charge-new" : "/fuel-log-new")}
               style={styles.quickActionItem}
             >
               <View style={styles.quickActionIconContainer}>
-                <Ionicons name="water-outline" size={24} color={Colors.primary500} />
+                <Ionicons name={activeVehicle?.propulsion === "electric" ? "flash-outline" : "water-outline"} size={24} color={Colors.primary500} />
               </View>
               <Text variant="smallLabel" color="gray700" align="center" style={styles.quickActionLabel}>
-                Tanqueo
+                {activeVehicle?.propulsion === "electric" ? "Carga" : "Tanqueo"}
               </Text>
             </TouchableOpacity>
 
@@ -356,14 +424,14 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               disabled={!activeVehicle}
-              onPress={() => router.push("/reports" as any)}
+              onPress={() => router.push("/other-expense-new")}
               style={styles.quickActionItem}
             >
               <View style={styles.quickActionIconContainer}>
-                <Ionicons name="stats-chart-outline" size={24} color={Colors.primary500} />
+                <Ionicons name="cube-outline" size={24} color={Colors.primary500} />
               </View>
               <Text variant="smallLabel" color="gray700" align="center" style={styles.quickActionLabel}>
-                Reportes
+                Otros
               </Text>
             </TouchableOpacity>
           </View>
@@ -382,24 +450,31 @@ export default function HomeScreen() {
                   <React.Fragment key={`${log.record_type}-${log.id}`}>
                     <TouchableOpacity
                       style={styles.transactionRow}
-                      onPress={() => router.push(`/${log.record_type === 'fuel' ? 'fuel-log' : log.record_type === 'maintenance' ? 'maintenance' : 'tax'}/${log.id}` as any)}
+                      onPress={() => router.push(`/${log.record_type === 'fuel' ? 'fuel-log' : log.record_type === 'electric-charge' ? 'electric-charge' : log.record_type === 'maintenance' ? 'maintenance' : log.record_type === 'tax' ? 'tax' : 'other-expense'}/${log.id}` as any)}
                     >
                       <View style={styles.transIconContainer}>
                         {log.record_type === 'fuel' && <Ionicons name="water-outline" size={20} color={Colors.primary500} />}
+                        {log.record_type === 'electric-charge' && <Ionicons name="flash-outline" size={20} color={Colors.primary500} />}
                         {log.record_type === 'maintenance' && <Ionicons name="build-outline" size={20} color={Colors.primary500} />}
                         {log.record_type === 'tax' && <Ionicons name="document-text-outline" size={20} color={Colors.primary500} />}
+                        {log.record_type === 'other-expense' && <Ionicons name="cube-outline" size={20} color={Colors.primary500} />}
                       </View>
                       <View style={styles.transInfo}>
                         <Text variant="body" color="gray900" weight="600">
                           {log.record_type === 'fuel'
                             ? (log.full_tank ? "Tanqueo Lleno" : "Carga Parcial")
+                            : log.record_type === 'electric-charge'
+                            ? "Carga Eléctrica"
                             : log.record_type === 'maintenance'
                             ? log.type
-                            : (log.type === "soat" ? "SOAT" : log.type === "tax" ? "Impuesto" : "Documento")}
+                            : log.record_type === 'tax'
+                            ? (log.type === "soat" ? "SOAT" : log.type === "tax" ? "Impuesto" : "Documento")
+                            : log.description}
                         </Text>
                         <Text variant="caption" color="gray500">
                           {log.date}
                           {log.record_type === 'fuel' && ` • ${parseFloat(log.gallons).toFixed(2)} gal`}
+                          {log.record_type === 'electric-charge' && ` • ${parseFloat(log.kwh_charged).toFixed(1)} kWh`}
                           {log.record_type === 'maintenance' && ` • ${log.odometer} km`}
                         </Text>
                       </View>
@@ -410,6 +485,11 @@ export default function HomeScreen() {
                         {log.record_type === 'fuel' && log.consumption_km_gal && (
                           <Text variant="smallLabel" color="success" weight="600">
                             {parseFloat(log.consumption_km_gal).toFixed(1)} km/gal
+                          </Text>
+                        )}
+                        {log.record_type === 'electric-charge' && log.consumption_km_kwh && (
+                          <Text variant="smallLabel" color="success" weight="600">
+                            {parseFloat(log.consumption_km_kwh).toFixed(1)} km/kWh
                           </Text>
                         )}
                       </View>
@@ -466,8 +546,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.gray200,
   },
-  summaryCard: {
+  summaryCardContainer: {
     marginBottom: Layout.verticalRhythm,
+  },
+  summaryCard: {
+    marginBottom: 0,
   },
   cardHeader: {
     width: "100%",

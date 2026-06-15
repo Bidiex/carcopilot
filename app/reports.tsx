@@ -25,8 +25,10 @@ export default function ReportsScreen() {
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
 
   const [fuelTotal, setFuelTotal] = useState(0);
+  const [chargeTotal, setChargeTotal] = useState(0);
   const [maintTotal, setMaintTotal] = useState(0);
   const [taxTotal, setTaxTotal] = useState(0);
+  const [otherTotal, setOtherTotal] = useState(0);
 
   const [totalKm, setTotalKm] = useState(0);
   const [costPerKm, setCostPerKm] = useState(0);
@@ -71,15 +73,29 @@ export default function ReportsScreen() {
         .select("amount_cop, issue_date")
         .eq("vehicle_id", vehicle.id);
 
+      const { data: chargeLogs } = await supabase
+        .from("electric_charge_logs")
+        .select("amount_cop, date, consumption_km_kwh, odometer")
+        .eq("vehicle_id", vehicle.id);
+
+      const { data: otherLogs } = await supabase
+        .from("other_expenses")
+        .select("amount_cop, date")
+        .eq("vehicle_id", vehicle.id);
+
       // Sums
       const fTotal = fuelLogs?.reduce((acc, log) => acc + parseFloat(log.amount_cop || 0), 0) || 0;
       const mTotal = maintLogs?.reduce((acc, log) => acc + parseFloat(log.amount_cop || 0), 0) || 0;
       const tTotal = taxLogs?.reduce((acc, log) => acc + parseFloat(log.amount_cop || 0), 0) || 0;
-      const grandTotal = fTotal + mTotal + tTotal;
+      const cTotal = chargeLogs?.reduce((acc, log) => acc + parseFloat(log.amount_cop || 0), 0) || 0;
+      const oTotal = otherLogs?.reduce((acc, log) => acc + parseFloat(log.amount_cop || 0), 0) || 0;
+      const grandTotal = fTotal + mTotal + tTotal + cTotal + oTotal;
 
       setFuelTotal(fTotal);
+      setChargeTotal(cTotal);
       setMaintTotal(mTotal);
       setTaxTotal(tTotal);
+      setOtherTotal(oTotal);
 
       // KM calculations
       let maxOdo = parseFloat(vehicle.initial_odometer);
@@ -87,6 +103,9 @@ export default function ReportsScreen() {
         if (parseFloat(log.odometer) > maxOdo) maxOdo = parseFloat(log.odometer);
       });
       maintLogs?.forEach(log => {
+        if (parseFloat(log.odometer) > maxOdo) maxOdo = parseFloat(log.odometer);
+      });
+      chargeLogs?.forEach(log => {
         if (parseFloat(log.odometer) > maxOdo) maxOdo = parseFloat(log.odometer);
       });
 
@@ -100,12 +119,22 @@ export default function ReportsScreen() {
       }
 
       // Avg Consumption
-      const consumptionItems = fuelLogs?.filter(log => log.consumption_km_gal != null) || [];
-      if (consumptionItems.length > 0) {
-        const sumCons = consumptionItems.reduce((acc, log) => acc + parseFloat(log.consumption_km_gal), 0);
-        setAvgConsumption(sumCons / consumptionItems.length);
+      if (vehicle.propulsion === 'electric') {
+        const consumptionItems = chargeLogs?.filter(log => log.consumption_km_kwh != null) || [];
+        if (consumptionItems.length > 0) {
+          const sumCons = consumptionItems.reduce((acc, log) => acc + parseFloat(log.consumption_km_kwh), 0);
+          setAvgConsumption(sumCons / consumptionItems.length);
+        } else {
+          setAvgConsumption(0);
+        }
       } else {
-        setAvgConsumption(0);
+        const consumptionItems = fuelLogs?.filter(log => log.consumption_km_gal != null) || [];
+        if (consumptionItems.length > 0) {
+          const sumCons = consumptionItems.reduce((acc, log) => acc + parseFloat(log.consumption_km_gal), 0);
+          setAvgConsumption(sumCons / consumptionItems.length);
+        } else {
+          setAvgConsumption(0);
+        }
       }
 
       // Monthly Evolution Data
@@ -120,6 +149,8 @@ export default function ReportsScreen() {
       fuelLogs?.forEach(log => addMonthly(log.date, parseFloat(log.amount_cop)));
       maintLogs?.forEach(log => addMonthly(log.date, parseFloat(log.amount_cop)));
       taxLogs?.forEach(log => addMonthly(log.issue_date, parseFloat(log.amount_cop)));
+      chargeLogs?.forEach(log => addMonthly(log.date, parseFloat(log.amount_cop)));
+      otherLogs?.forEach(log => addMonthly(log.date, parseFloat(log.amount_cop)));
 
       // Sort months
       const sortedMonths = Object.keys(monthlyMap).sort(); // chronological
@@ -162,11 +193,13 @@ export default function ReportsScreen() {
 
   const pieData = [
     { value: fuelTotal, color: Colors.primary500, text: "Gasolina" },
+    { value: chargeTotal, color: Colors.success, text: "Cargas" },
     { value: maintTotal, color: Colors.warning, text: "Talleres" },
     { value: taxTotal, color: Colors.danger, text: "Impuestos" },
+    { value: otherTotal, color: Colors.gray500, text: "Otros" },
   ].filter(d => d.value > 0);
 
-  const totalPie = fuelTotal + maintTotal + taxTotal;
+  const totalPie = fuelTotal + chargeTotal + maintTotal + taxTotal + otherTotal;
 
   if (loading) {
     return (
@@ -212,7 +245,12 @@ export default function ReportsScreen() {
               <Ionicons name="leaf-outline" size={20} color={Colors.success} />
             </View>
             <Text variant="smallLabel" color="gray500" style={styles.kpiLabel}>Rendimiento</Text>
-            <Text variant="heading2" color="gray900" weight="700">{avgConsumption > 0 ? avgConsumption.toFixed(1) : "--"} <Text variant="caption" color="gray500">km/gal</Text></Text>
+            <Text variant="heading2" color="gray900" weight="700">
+              {avgConsumption > 0 ? avgConsumption.toFixed(1) : "--"}{" "}
+              <Text variant="caption" color="gray500">
+                {activeVehicle.propulsion === 'electric' ? 'km/kWh' : 'km/gal'}
+              </Text>
+            </Text>
           </View>
         </View>
 

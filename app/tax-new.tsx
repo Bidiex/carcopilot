@@ -18,6 +18,7 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { scheduleDocumentReminder } from "@/lib/notifications";
 
 const TAX_TYPES = [
   { label: "SOAT", value: "soat" },
@@ -31,6 +32,7 @@ export default function TaxNewScreen() {
   const { showAlert } = useAlert();
 
   const [loading, setLoading] = useState(false);
+  const [activeVehicle, setActiveVehicle] = useState<any>(null);
   const [activeVehicleId, setActiveVehicleId] = useState<string | null>(null);
 
   const [recordType, setRecordType] = useState("");
@@ -56,11 +58,12 @@ export default function TaxNewScreen() {
   const fetchActiveVehicle = async () => {
     const { data } = await supabase
       .from("vehicles")
-      .select("id")
+      .select("id, custom_brand, custom_model, plate")
       .eq("user_id", user?.id)
       .eq("is_active", true)
       .single();
     if (data) {
+      setActiveVehicle(data);
       setActiveVehicleId(data.id);
     } else {
       showAlert(
@@ -145,22 +148,37 @@ export default function TaxNewScreen() {
     }
 
     try {
-      const { error } = await supabase.from("annual_records").insert({
-        user_id: user.id,
-        vehicle_id: activeVehicleId,
-        type: dbType,
-        issue_date: issueDate,
-        expiry_date: expiryDate,
-        amount_cop: parseFloat(amount),
-        provider: recordType === "soat" ? provider.trim() : null,
-        tax_year: dbType === "tax" ? parseInt(taxYear) : null,
-        tax_department: dbType === "tax" ? provider.trim() : null,
-        tax_city: recordType === "tax_muni" ? taxCity.trim() : null,
-      });
+      const { data: insertedRecord, error } = await supabase
+        .from("annual_records")
+        .insert({
+          user_id: user.id,
+          vehicle_id: activeVehicleId,
+          type: dbType,
+          issue_date: issueDate,
+          expiry_date: expiryDate,
+          amount_cop: parseFloat(amount),
+          provider: recordType === "soat" ? provider.trim() : null,
+          tax_year: dbType === "tax" ? parseInt(taxYear) : null,
+          tax_department: dbType === "tax" ? provider.trim() : null,
+          tax_city: recordType === "tax_muni" ? taxCity.trim() : null,
+        })
+        .select()
+        .single();
 
       if (error) {
         showAlert("Error de Creación", error.message, [], "error");
       } else {
+        if (insertedRecord && activeVehicle) {
+          const vehicleName = `${activeVehicle.custom_brand} ${activeVehicle.custom_model}`;
+          const plateStr = activeVehicle.plate || "Sin Placa";
+          await scheduleDocumentReminder(
+            insertedRecord.id,
+            dbType as any,
+            vehicleName,
+            plateStr,
+            expiryDate
+          );
+        }
         showAlert(
           "Registro Exitoso",
           "El registro ha sido guardado.",

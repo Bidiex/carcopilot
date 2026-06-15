@@ -19,6 +19,7 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { scheduleDocumentReminder, cancelDocumentReminders } from "@/lib/notifications";
 
 const TAX_TYPES = [
   { label: "SOAT", value: "soat" },
@@ -34,6 +35,7 @@ export default function TaxEditScreen() {
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [vehicleDetails, setVehicleDetails] = useState<any>(null);
 
   const [recordType, setRecordType] = useState("");
   const [issueDate, setIssueDate] = useState("");
@@ -59,12 +61,14 @@ export default function TaxEditScreen() {
     try {
       const { data, error } = await supabase
         .from("annual_records")
-        .select("*")
+        .select("*, vehicles(custom_brand, custom_model, plate)")
         .eq("id", id)
         .eq("user_id", user?.id)
         .single();
 
       if (error || !data) throw error;
+
+      setVehicleDetails(data.vehicles);
 
       let determinedRecordType = data.type;
       if (data.type === "tax") {
@@ -178,6 +182,17 @@ export default function TaxEditScreen() {
       if (error) {
         showAlert("Error de Actualización", error.message, [], "error");
       } else {
+        if (vehicleDetails) {
+          const vehicleName = `${vehicleDetails.custom_brand} ${vehicleDetails.custom_model}`;
+          const plateStr = vehicleDetails.plate || "Sin Placa";
+          await scheduleDocumentReminder(
+            id as string,
+            dbType as any,
+            vehicleName,
+            plateStr,
+            expiryDate
+          );
+        }
         showAlert(
           "Actualización Exitosa",
           "El registro ha sido actualizado.",
@@ -211,6 +226,8 @@ export default function TaxEditScreen() {
                 .eq("user_id", user?.id);
 
               if (error) throw error;
+
+              await cancelDocumentReminders(id as string);
 
               router.back();
             } catch {
