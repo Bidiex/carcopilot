@@ -5,11 +5,13 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useFocusEffect, useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { getColombia30DaysAgoString } from "@/lib/date";
 import { Text } from "@/components/Typography";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
@@ -17,29 +19,61 @@ import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { VehiclePicker, VehiclePickerPill } from "@/components/VehiclePicker";
 
+const VEHICLE_IMAGES: { [key: string]: any } = {
+  "car_model1.webp": require("@/assets/cars/car_model1.webp"),
+  "car_model2.webp": require("@/assets/cars/car_model2.webp"),
+  "car_model3.webp": require("@/assets/cars/car_model3.webp"),
+  "car_model4.webp": require("@/assets/cars/car_model4.webp"),
+  "car_model5.webp": require("@/assets/cars/car_model5.webp"),
+};
+
+let dashboardCache: {
+  vehicles: any[];
+  recentLogs: any[];
+  monthlySpent: number;
+  currentOdometer: number;
+  averageConsumption: number | null;
+  profileName: string;
+} | null = null;
+
 export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [profileName, setProfileName] = useState(user?.user_metadata?.name || "Conductor");
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  // null = "Todos los vehículos"; un id específico = filtro por ese vehículo
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  // Clear cache if user switched
+  const lastUserIdRef = React.useRef<string | null>(null);
+  if (user && lastUserIdRef.current !== user.id) {
+    lastUserIdRef.current = user.id;
+    dashboardCache = null;
+  }
+
+  const [profileName, setProfileName] = useState(dashboardCache?.profileName || user?.user_metadata?.name || "Conductor");
+  const [vehicles, setVehicles] = useState<any[]>(dashboardCache?.vehicles || []);
+  
+  // Si hay caché y hay solo 1 vehículo, forzar que inicie seleccionado
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(() => {
+    if (dashboardCache?.vehicles && dashboardCache.vehicles.length === 1) {
+      return dashboardCache.vehicles[0].id;
+    }
+    return null;
+  });
+  
   const [pickerVisible, setPickerVisible] = useState(false);
 
-  const [recentLogs, setRecentLogs] = useState<any[]>([]);
-  const [monthlySpent, setMonthlySpent] = useState(0);
-  const [currentOdometer, setCurrentOdometer] = useState(0);
-  const [averageConsumption, setAverageConsumption] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [recentLogs, setRecentLogs] = useState<any[]>(dashboardCache?.recentLogs || []);
+  const [monthlySpent, setMonthlySpent] = useState(dashboardCache?.monthlySpent || 0);
+  const [currentOdometer, setCurrentOdometer] = useState(dashboardCache?.currentOdometer || 0);
+  const [averageConsumption, setAverageConsumption] = useState<number | null>(dashboardCache?.averageConsumption ?? null);
+  const [loading, setLoading] = useState(vehicles.length === 0);
 
   // Vehículo actualmente seleccionado (o el activo como fallback para acciones rápidas)
   const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId) ?? null;
   const activeVehicle = vehicles.find(v => v.is_active) ?? vehicles[0] ?? null;
   // Para acciones rápidas, si hay uno seleccionado úsalo, si no el activo
   const actionVehicle = selectedVehicle ?? activeVehicle;
-  // Modo "todos"
-  const isAllMode = selectedVehicleId === null;
+  
+  // Modo "todos" (si hay 1 solo vehículo, desactivar modo todos y forzar el único activo)
+  const isAllMode = vehicles.length > 1 ? selectedVehicleId === null : false;
 
   useFocusEffect(
     useCallback(() => {
@@ -48,7 +82,10 @@ export default function HomeScreen() {
 
       const loadDashboardData = async () => {
         try {
-          setLoading(true);
+          // Si no hay vehículos cargados en estado, mostrar loading, de lo contrario cargar silenciosamente
+          if (vehicles.length === 0) {
+            setLoading(true);
+          }
 
           // 1. Nombre del perfil
           const { data: profile } = await supabase
@@ -74,14 +111,19 @@ export default function HomeScreen() {
             return;
           }
 
-          if (isMounted) setVehicles(vhs);
+          if (isMounted) {
+            setVehicles(vhs);
+            // Si hay exactamente 1 vehículo y selectedVehicleId es null, autoseleccionarlo
+            if (vhs.length === 1 && selectedVehicleId === null) {
+              setSelectedVehicleId(vhs[0].id);
+            }
+          }
 
           // 3. Determinar qué vehículos filtrar
-          const vehicleIds = selectedVehicleId
-            ? [selectedVehicleId]
-            : vhs.map((v: any) => v.id);
+          const activeId = selectedVehicleId || (vhs.length === 1 ? vhs[0].id : null);
+          const vehicleIds = activeId ? [activeId] : vhs.map((v: any) => v.id);
 
-          // 4. Últimos registros recientes de todos/el seleccionado
+          // 4. Últimos registros recientes
           const [fuelRes, maintRes, taxRes, chargeRes, otherRes] = await Promise.all([
             supabase.from("fuel_logs")
               .select("id, date, amount_cop, gallons, full_tank, consumption_km_gal, odometer, vehicle_id")
@@ -108,12 +150,11 @@ export default function HomeScreen() {
           if (otherRes.data) allLogs.push(...otherRes.data.map(l => ({ ...l, record_type: 'other-expense' })));
 
           allLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          if (isMounted) setRecentLogs(allLogs.slice(0, 3));
+          const sliceLogs = allLogs.slice(0, 3);
+          if (isMounted) setRecentLogs(sliceLogs);
 
-          // 5. Gastos últimos 30 días (consolidado de los vehículos filtrados)
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-          const dateLimit = thirtyDaysAgo.toISOString().split("T")[0];
+          // 5. Gastos últimos 30 días
+          const dateLimit = getColombia30DaysAgoString();
 
           const [mFuel, mMaint, mTax, mCharge, mOther] = await Promise.all([
             supabase.from("fuel_logs").select("amount_cop").in("vehicle_id", vehicleIds).gte("date", dateLimit),
@@ -132,17 +173,21 @@ export default function HomeScreen() {
 
           if (isMounted) setMonthlySpent(total);
 
-          // 6. Odómetro y consumo — solo cuando hay un vehículo específico seleccionado
-          if (!isAllMode && selectedVehicleId) {
-            const targetVehicle = vhs.find((v: any) => v.id === selectedVehicleId);
+          // 6. Odómetro y consumo
+          const activeVehicleIdOrSingle = activeId;
+          let odo = 0;
+          let avg: number | null = null;
+
+          if (activeVehicleIdOrSingle) {
+            const targetVehicle = vhs.find((v: any) => v.id === activeVehicleIdOrSingle);
 
             const [hFuel, hMaint, hCharge] = await Promise.all([
-              supabase.from("fuel_logs").select("odometer").eq("vehicle_id", selectedVehicleId).order("odometer", { ascending: false }).limit(1),
-              supabase.from("maintenance_logs").select("odometer").eq("vehicle_id", selectedVehicleId).order("odometer", { ascending: false }).limit(1),
-              supabase.from("electric_charge_logs").select("odometer").eq("vehicle_id", selectedVehicleId).order("odometer", { ascending: false }).limit(1),
+              supabase.from("fuel_logs").select("odometer").eq("vehicle_id", activeVehicleIdOrSingle).order("odometer", { ascending: false }).limit(1),
+              supabase.from("maintenance_logs").select("odometer").eq("vehicle_id", activeVehicleIdOrSingle).order("odometer", { ascending: false }).limit(1),
+              supabase.from("electric_charge_logs").select("odometer").eq("vehicle_id", activeVehicleIdOrSingle).order("odometer", { ascending: false }).limit(1),
             ]);
 
-            let odo = targetVehicle?.initial_odometer ?? 0;
+            odo = targetVehicle?.initial_odometer ?? 0;
             if (hFuel.data?.[0]) odo = Math.max(odo, parseFloat(hFuel.data[0].odometer));
             if (hMaint.data?.[0]) odo = Math.max(odo, parseFloat(hMaint.data[0].odometer));
             if (hCharge.data?.[0]) odo = Math.max(odo, parseFloat(hCharge.data[0].odometer));
@@ -151,20 +196,20 @@ export default function HomeScreen() {
             // Consumo promedio
             if (targetVehicle?.propulsion === "electric") {
               const { data: cLogs } = await supabase.from("electric_charge_logs")
-                .select("consumption_km_kwh").eq("vehicle_id", selectedVehicleId)
+                .select("consumption_km_kwh").eq("vehicle_id", activeVehicleIdOrSingle)
                 .not("consumption_km_kwh", "is", null);
               if (cLogs && cLogs.length > 0) {
-                const avg = cLogs.reduce((a, l) => a + parseFloat(l.consumption_km_kwh), 0) / cLogs.length;
+                avg = cLogs.reduce((a, l) => a + parseFloat(l.consumption_km_kwh), 0) / cLogs.length;
                 if (isMounted) setAverageConsumption(avg);
               } else {
                 if (isMounted) setAverageConsumption(null);
               }
             } else {
               const { data: cLogs } = await supabase.from("fuel_logs")
-                .select("consumption_km_gal").eq("vehicle_id", selectedVehicleId)
+                .select("consumption_km_gal").eq("vehicle_id", activeVehicleIdOrSingle)
                 .not("consumption_km_gal", "is", null);
               if (cLogs && cLogs.length > 0) {
-                const avg = cLogs.reduce((a, l) => a + parseFloat(l.consumption_km_gal), 0) / cLogs.length;
+                avg = cLogs.reduce((a, l) => a + parseFloat(l.consumption_km_gal), 0) / cLogs.length;
                 if (isMounted) setAverageConsumption(avg);
               } else {
                 if (isMounted) setAverageConsumption(null);
@@ -176,6 +221,16 @@ export default function HomeScreen() {
               setAverageConsumption(null);
             }
           }
+
+          // Guardar caché en memoria
+          dashboardCache = {
+            vehicles: vhs,
+            recentLogs: sliceLogs,
+            monthlySpent: total,
+            currentOdometer: odo,
+            averageConsumption: avg,
+            profileName: profile?.name || "Conductor",
+          };
 
         } catch (e) {
           // silencioso
@@ -247,7 +302,7 @@ export default function HomeScreen() {
             style={styles.summaryCardContainer}
           >
             <Card variant="primary" style={styles.summaryCard}>
-              <View style={styles.cardHeader}>
+              <View style={[styles.cardHeader, !isAllMode && { maxWidth: "60%" }]}>
                 <Text variant="caption" color="white" style={styles.cardSubtitle}>
                   Gastos Últimos 30 Días
                 </Text>
@@ -258,7 +313,7 @@ export default function HomeScreen() {
 
               <View style={styles.cardDivider} />
 
-              <View style={styles.cardVehicleInfo}>
+              <View style={[styles.cardVehicleInfo, !isAllMode && { maxWidth: "60%" }]}>
                 {/* Modo: todos los vehículos */}
                 {isAllMode ? (
                   <View style={styles.vehicleRow}>
@@ -276,7 +331,7 @@ export default function HomeScreen() {
                         color={Colors.white}
                         style={styles.cardIcon}
                       />
-                      <Text variant="caption" color="white" weight="600">
+                      <Text variant="caption" color="white" weight="600" numberOfLines={1}>
                         {selectedVehicle?.custom_brand} {selectedVehicle?.custom_model} • {selectedVehicle?.plate || "Sin Placa"}
                       </Text>
                     </View>
@@ -299,6 +354,14 @@ export default function HomeScreen() {
                   </>
                 )}
               </View>
+
+              {/* Absolute Vehicle Image overlay for premium look */}
+              {!isAllMode && (selectedVehicle?.model_image || activeVehicle?.model_image) && (
+                <Image
+                  source={VEHICLE_IMAGES[selectedVehicle?.model_image || activeVehicle?.model_image]}
+                  style={styles.cardCarOverlay}
+                />
+              )}
             </Card>
           </TouchableOpacity>
         ) : (
@@ -447,15 +510,23 @@ const styles = StyleSheet.create({
     justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: Colors.gray200,
   },
   summaryCardContainer: { marginBottom: Layout.verticalRhythm },
-  summaryCard: { marginBottom: 0 },
+  summaryCard: { marginBottom: 0, position: "relative" },
+  cardCarOverlay: {
+    position: "absolute",
+    right: -10,
+    bottom: -15,
+    width: 155,
+    height: 105,
+    resizeMode: "contain",
+  },
   cardHeader: { width: "100%" },
   cardSubtitle: { opacity: 0.8, marginBottom: Spacing.xs },
   cardTitle: { fontSize: 28 },
   cardDivider: { height: 1, backgroundColor: "rgba(255,255,255,0.15)", marginVertical: Spacing.md },
   cardVehicleInfo: { gap: Spacing.sm },
   vehicleRow: { flexDirection: "row", alignItems: "center" },
-  cardIcon: { marginRight: Spacing.xs },
-  statsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: Spacing.xs },
+  cardIcon: { marginRight: Spacing.sm }, // Updated gap: Spacing.sm (8) for a clean premium spacing
+  statsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: Spacing.sm }, // Updated margin
   statItem: { flex: 1 },
   opacityLabel: { opacity: 0.7, marginBottom: 2 },
   emptyVehicleCard: { padding: 24, alignItems: "center", marginBottom: Layout.verticalRhythm },
@@ -468,7 +539,17 @@ const styles = StyleSheet.create({
   sectionTitle: { marginBottom: 0, fontWeight: "700" },
   quickActionsGrid: { flexDirection: "row", justifyContent: "space-between" },
   quickActionItem: { width: 72, alignItems: "center" },
-  quickActionIconContainer: { width: 56, height: 56, borderRadius: 18, backgroundColor: Colors.white, justifyContent: "center", alignItems: "center", ...Shadows.card, marginBottom: Spacing.sm },
+  quickActionIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.2,
+    borderColor: Colors.gray200, // Replaced elevation/shadows with premium border to prevent Android rendering bugs
+    marginBottom: Spacing.sm,
+  },
   quickActionLabel: { fontWeight: "600" },
   transactionsCard: { paddingVertical: Spacing.xs },
   transactionRow: { flexDirection: "row", alignItems: "center", height: 64, paddingHorizontal: Spacing.sm },

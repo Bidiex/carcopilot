@@ -19,6 +19,7 @@ import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { scheduleDocumentReminder } from "@/lib/notifications";
+import { getColombiaDateString, getColombiaYear, addYearsToDateString } from "@/lib/date";
 
 const TAX_TYPES = [
   { label: "SOAT", value: "soat" },
@@ -36,10 +37,10 @@ export default function TaxNewScreen() {
   const [activeVehicleId, setActiveVehicleId] = useState<string | null>(null);
 
   const [recordType, setRecordType] = useState("");
-  const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
+  const [issueDate, setIssueDate] = useState(getColombiaDateString());
   const [amount, setAmount] = useState("");
   const [provider, setProvider] = useState(""); // Aseguradora o Departamento
-  const [taxYear, setTaxYear] = useState(new Date().getFullYear().toString());
+  const [taxYear, setTaxYear] = useState(getColombiaYear().toString());
   const [taxCity, setTaxCity] = useState("");
 
   const [typeError, setTypeError] = useState("");
@@ -111,7 +112,7 @@ export default function TaxNewScreen() {
         isValid = false;
       }
       const yearNum = parseInt(taxYear);
-      if (!taxYear || isNaN(yearNum) || yearNum < 2000 || yearNum > new Date().getFullYear() + 1) {
+      if (!taxYear || isNaN(yearNum) || yearNum < 2000 || yearNum > getColombiaYear() + 1) {
         setYearError("Año inválido");
         isValid = false;
       }
@@ -131,16 +132,7 @@ export default function TaxNewScreen() {
     setLoading(true);
 
     // Calculate expiry date (+ 1 year exactly)
-    const issueDateObj = new Date(issueDate);
-    // Corrección para evitar que la zona horaria retrase el día al parsear YYYY-MM-DD
-    const expiryDateObj = new Date(issueDateObj.getTime() + issueDateObj.getTimezoneOffset() * 60000);
-    expiryDateObj.setFullYear(expiryDateObj.getFullYear() + 1);
-    
-    // Volvemos a formatear a YYYY-MM-DD de forma segura
-    const yy = expiryDateObj.getFullYear();
-    const mm = String(expiryDateObj.getMonth() + 1).padStart(2, "0");
-    const dd = String(expiryDateObj.getDate()).padStart(2, "0");
-    const expiryDate = `${yy}-${mm}-${dd}`;
+    const expiryDate = addYearsToDateString(issueDate, 1);
 
     let dbType = recordType;
     if (recordType === "tax_dept" || recordType === "tax_muni") {

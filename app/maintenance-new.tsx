@@ -12,11 +12,13 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { supabase } from "@/lib/supabase";
+import { getColombiaDateString } from "@/lib/date";
+import { useLastOdometer } from "@/hooks/useLastOdometer";
 import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
 import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
-import { Colors, Spacing, Layout } from "@/constants/theme";
+import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 const MAINTENANCE_TYPES = [
@@ -38,7 +40,9 @@ export default function MaintenanceNewScreen() {
   const [loading, setLoading] = useState(false);
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
 
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const { data: lastOdo } = useLastOdometer(activeVehicle?.id);
+
+  const [date, setDate] = useState(getColombiaDateString());
   const [type, setType] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -209,6 +213,15 @@ export default function MaintenanceNewScreen() {
             error={odometerError}
           />
 
+          {lastOdo !== null && (
+            <View style={styles.odoBadge}>
+              <Ionicons name="speedometer-outline" size={14} color={Colors.primary600} />
+              <Text variant="caption" color="primary600" weight="600">
+                Último registrado: {lastOdo.toLocaleString("es-CO")} km
+              </Text>
+            </View>
+          )}
+
           <Button
             title="Guardar Registro"
             onPress={handleCreate}
@@ -241,4 +254,16 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   submitButton: { marginTop: Spacing.md, marginBottom: Spacing.xl },
+  odoBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary50,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    alignSelf: "flex-start",
+    marginTop: -Spacing.xs,
+    marginBottom: Spacing.xs,
+    gap: 4,
+  },
 });

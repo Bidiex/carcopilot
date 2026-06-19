@@ -13,6 +13,8 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { supabase } from "@/lib/supabase";
+import { getColombiaDateString } from "@/lib/date";
+import { useLastOdometer } from "@/hooks/useLastOdometer";
 import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
 import { Select } from "@/components/Select";
@@ -34,7 +36,9 @@ export default function ElectricChargeNewScreen() {
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
   const [fetchingVehicle, setFetchingVehicle] = useState(true);
 
-  const [dateStr, setDateStr] = useState(new Date().toISOString().split("T")[0]);
+  const { data: lastOdo } = useLastOdometer(activeVehicle?.id);
+
+  const [dateStr, setDateStr] = useState(getColombiaDateString());
   const [odometer, setOdometer] = useState("");
   const [kwhCharged, setKwhCharged] = useState("");
   const [amount, setAmount] = useState("");
@@ -309,6 +313,15 @@ export default function ElectricChargeNewScreen() {
             error={odometerError}
           />
 
+          {lastOdo !== null && (
+            <View style={styles.odoBadge}>
+              <Ionicons name="speedometer-outline" size={14} color={Colors.primary600} />
+              <Text variant="caption" color="primary600" weight="600">
+                Último registrado: {lastOdo.toLocaleString("es-CO")} km
+              </Text>
+            </View>
+          )}
+
           <Input
             label="Cantidad de Energía (kWh) *"
             placeholder="Ej: 15.5"
@@ -425,5 +438,17 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: Spacing.md,
     marginBottom: Spacing.xl,
+  },
+  odoBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary50,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    alignSelf: "flex-start",
+    marginTop: -Spacing.xs,
+    marginBottom: Spacing.xs,
+    gap: 4,
   },
 });

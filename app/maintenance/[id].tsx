@@ -13,11 +13,12 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { supabase } from "@/lib/supabase";
+import { useLastOdometer } from "@/hooks/useLastOdometer";
 import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
 import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
-import { Colors, Spacing, Layout } from "@/constants/theme";
+import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 const MAINTENANCE_TYPES = [
@@ -40,6 +41,8 @@ export default function MaintenanceEditScreen() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
+
+  const { data: lastOdo } = useLastOdometer(activeVehicle?.id, { id: id as string, type: "maintenance" });
 
   const [date, setDate] = useState("");
   const [type, setType] = useState("");
@@ -279,6 +282,15 @@ export default function MaintenanceEditScreen() {
             error={odometerError}
           />
 
+          {lastOdo !== null && (
+            <View style={styles.odoBadge}>
+              <Ionicons name="speedometer-outline" size={14} color={Colors.primary600} />
+              <Text variant="caption" color="primary600" weight="600">
+                Último registrado: {lastOdo.toLocaleString("es-CO")} km
+              </Text>
+            </View>
+          )}
+
           <Button
             title="Actualizar Registro"
             onPress={handleUpdate}
@@ -313,4 +325,16 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   submitButton: { marginTop: Spacing.md, marginBottom: Spacing.xl },
+  odoBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary50,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    alignSelf: "flex-start",
+    marginTop: -Spacing.xs,
+    marginBottom: Spacing.xs,
+    gap: 4,
+  },
 });

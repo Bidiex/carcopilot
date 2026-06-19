@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { supabase } from "@/lib/supabase";
+import { getColombiaDateString } from "@/lib/date";
 import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
@@ -27,7 +28,7 @@ export default function OtherExpenseNewScreen() {
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
   const [fetchingVehicle, setFetchingVehicle] = useState(true);
 
-  const [dateStr, setDateStr] = useState(new Date().toISOString().split("T")[0]);
+  const [dateStr, setDateStr] = useState(getColombiaDateString());
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
 

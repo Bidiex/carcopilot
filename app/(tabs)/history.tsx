@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useFocusEffect, useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { formatMonthYear } from "@/lib/date";
 import { Text } from "@/components/Typography";
 import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -116,11 +117,9 @@ export default function HistoryScreen() {
   const sections = useMemo(() => {
     const grouped = filteredLogs.reduce((acc, log) => {
       // Create a key for the month (e.g. "Junio 2026")
-      const date = new Date(log.date);
-      // Fallback in case of invalid date
-      if (isNaN(date.getTime())) return acc;
+      const monthName = formatMonthYear(log.date);
+      if (!monthName) return acc;
       
-      const monthName = date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
       // Capitalize first letter
       const sectionTitle = monthName.charAt(0).toUpperCase() + monthName.slice(1);
       
@@ -269,7 +268,7 @@ export default function HistoryScreen() {
       ) : (
         <View style={styles.emptyContainer}>
           <Ionicons name="receipt-outline" size={64} color={Colors.gray300} style={styles.emptyIcon} />
-          <Text variant="heading3" color="gray900" weight="600" align="center" style={styles.emptyTitle}>
+          <Text variant="sectionTitle" color="gray900" weight="600" align="center" style={styles.emptyTitle}>
             No hay registros
           </Text>
           <Text variant="body" color="gray500" align="center">

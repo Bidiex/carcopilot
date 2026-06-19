@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { getShortMonthName } from "@/lib/date";
 import { Text } from "@/components/Typography";
 import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -159,7 +160,7 @@ export default function ReportsScreen() {
 
       const chartData = last6Months.map(m => {
         const [year, month] = m.split("-");
-        const shortMonth = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleString('es', { month: 'short' });
+        const shortMonth = getShortMonthName(month);
         return {
           value: monthlyMap[m],
           label: shortMonth,

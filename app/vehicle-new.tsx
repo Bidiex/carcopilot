@@ -6,12 +6,16 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
+  Image,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { supabase } from "@/lib/supabase";
+import { getColombiaYear } from "@/lib/date";
+import { formatPlate, validatePlate } from "@/lib/validation";
 import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
 import { Select } from "@/components/Select";
@@ -69,6 +73,26 @@ const MOTO_BRANDS = [
   { label: "Yamaha", value: "Yamaha" },
 ];
 
+const { width } = Dimensions.get("window");
+
+const SILHOUETTES = [
+  { id: "car_model1.webp", name: "Hatchback Moderno", image: require("../assets/cars/car_model1.webp") },
+  { id: "car_model2.webp", name: "Sedán Deportivo", image: require("../assets/cars/car_model2.webp") },
+  { id: "car_model3.webp", name: "Camioneta SUV", image: require("../assets/cars/car_model3.webp") },
+  { id: "car_model4.webp", name: "Superdeportivo", image: require("../assets/cars/car_model4.webp") },
+  { id: "car_model5.webp", name: "Sedán Familiar", image: require("../assets/cars/car_model5.webp") },
+];
+
+const FUEL_TYPES = [
+  { label: "Gasolina", value: "gasoline" },
+  { label: "Diésel (ACPM)", value: "diesel" },
+];
+
+const GASOLINE_SUBTYPES = [
+  { label: "Corriente", value: "corriente" },
+  { label: "Extra (Premium)", value: "extra" },
+];
+
 export default function VehicleNewScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -82,6 +106,9 @@ export default function VehicleNewScreen() {
   const [batteryCapacity, setBatteryCapacity] = useState("");
   const [vehicleType, setVehicleType] = useState<VehicleType>("car");
   const [propulsion, setPropulsion] = useState<PropulsionType>("combustion");
+  const [fuelType, setFuelType] = useState("gasoline");
+  const [gasolineSubtype, setGasolineSubtype] = useState("corriente");
+  const [selectedSilhouette, setSelectedSilhouette] = useState("car_model1.webp");
 
   const [loading, setLoading] = useState(false);
 
@@ -112,7 +139,7 @@ export default function VehicleNewScreen() {
     }
 
     const yearNum = parseInt(year);
-    const currentYear = new Date().getFullYear();
+    const currentYear = getColombiaYear();
     if (!year) {
       setYearError("El año es requerido");
       isValid = false;
@@ -126,17 +153,17 @@ export default function VehicleNewScreen() {
       if (!cleanPlate) {
         setPlateError("La placa es requerida");
         isValid = false;
-      } else if (!/^[A-Z]{3}[0-9]{3}$/.test(cleanPlate)) {
+      } else if (!validatePlate(cleanPlate, "car")) {
         setPlateError("Formato de carro inválido (ej: ABC123)");
         isValid = false;
       }
-    } else if (vehicleType === "moto") {
+    } else {
       if (propulsion === "combustion" && !cleanPlate) {
         setPlateError("La placa es requerida");
         isValid = false;
       } else if (cleanPlate) {
-        if (!/^[A-Z]{3}[0-9]{2}[A-Z]$/.test(cleanPlate) && !/^[A-Z]{3}[0-9]{3}$/.test(cleanPlate)) {
-          setPlateError("Formato de moto inválido (ej: ABC12D)");
+        if (!validatePlate(cleanPlate, "moto")) {
+          setPlateError("Formato de moto inválido (ej: ABC12A)");
           isValid = false;
         }
       }
@@ -188,6 +215,9 @@ export default function VehicleNewScreen() {
         year: parseInt(year),
         initial_odometer: parseFloat(odometer),
         battery_capacity_kwh: propulsion === "electric" ? parseFloat(batteryCapacity) : null,
+        fuel_type: propulsion === "combustion" ? fuelType : null,
+        gasoline_subtype: (propulsion === "combustion" && fuelType === "gasoline") ? gasolineSubtype : null,
+        model_image: selectedSilhouette,
         is_active: true,
       });
 
@@ -320,6 +350,35 @@ export default function VehicleNewScreen() {
             </View>
           </View>
 
+          {propulsion === "combustion" && (
+            <>
+              <Select
+                label="Tipo de Combustible *"
+                placeholder="Seleccionar tipo de combustible"
+                value={fuelType}
+                options={FUEL_TYPES}
+                onSelect={(val) => {
+                  setFuelType(val);
+                  if (val === "diesel") {
+                    setGasolineSubtype("");
+                  } else {
+                    setGasolineSubtype("corriente");
+                  }
+                }}
+              />
+
+              {fuelType === "gasoline" && (
+                <Select
+                  label="Subtipo de Gasolina *"
+                  placeholder="Seleccionar subtipo de gasolina"
+                  value={gasolineSubtype}
+                  options={GASOLINE_SUBTYPES}
+                  onSelect={setGasolineSubtype}
+                />
+              )}
+            </>
+          )}
+
           <Select
             label="Marca *"
             placeholder="Seleccionar marca"
@@ -352,9 +411,9 @@ export default function VehicleNewScreen() {
                 ? "Placa (Opcional)"
                 : "Placa *"
             }
-            placeholder={vehicleType === "car" ? "Ej: ABC123" : "Ej: ABC12D"}
+            placeholder={vehicleType === "car" ? "Ej: ABC123" : "Ej: ABC12A"}
             value={plate}
-            onChangeText={setPlate}
+            onChangeText={(text) => setPlate(formatPlate(text, vehicleType))}
             autoCapitalize="characters"
             error={plateError}
           />
@@ -378,6 +437,50 @@ export default function VehicleNewScreen() {
               error={batteryCapacityError}
             />
           )}
+
+          {/* Silhouette Selection */}
+          <View style={styles.selectorGroup}>
+            <Text variant="caption" color="gray600" style={styles.selectorLabel}>
+              Silueta del Vehículo
+            </Text>
+            <Text variant="caption" color="gray500" style={styles.selectorSubtitle}>
+              {vehicleType === "moto"
+                ? "Puedes seleccionar una silueta representativa de carro para el panel principal o continuar con el ícono de moto estándar."
+                : "Elige la silueta que mejor represente a tu vehículo en el panel principal."}
+            </Text>
+            <View style={styles.silhouetteGrid}>
+              {SILHOUETTES.map((sil) => {
+                const isSelected = selectedSilhouette === sil.id;
+                return (
+                  <TouchableOpacity
+                    key={sil.id}
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedSilhouette(sil.id)}
+                    style={[
+                      styles.silhouetteCard,
+                      isSelected && styles.silhouetteCardSelected,
+                    ]}
+                  >
+                    <Image source={sil.image} style={styles.silhouetteImg} />
+                    <Text
+                      variant="caption"
+                      color={isSelected ? "primary500" : "gray700"}
+                      weight={isSelected ? "600" : "500"}
+                      style={styles.silhouetteName}
+                      align="center"
+                    >
+                      {sil.name}
+                    </Text>
+                    {isSelected && (
+                      <View style={styles.checkBadge}>
+                        <Ionicons name="checkmark-circle" size={18} color={Colors.primary500} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
 
           <Button
             title="Crear Vehículo"
@@ -447,5 +550,46 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: Spacing.md,
     marginBottom: Spacing.xl,
+  },
+  selectorSubtitle: {
+    fontSize: 12,
+    color: Colors.gray500,
+    marginLeft: 4,
+    marginBottom: Spacing.xs,
+  },
+  silhouetteGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  silhouetteCard: {
+    width: (width - Layout.screenPadding * 2 - Spacing.md) / 2,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.sm,
+    borderWidth: 1.5,
+    borderColor: Colors.gray200,
+    padding: Spacing.sm,
+    alignItems: "center",
+    position: "relative",
+  },
+  silhouetteCardSelected: {
+    borderColor: Colors.primary500,
+    backgroundColor: "rgba(77, 77, 255, 0.02)",
+  },
+  silhouetteImg: {
+    width: "100%",
+    height: 70,
+    resizeMode: "contain",
+  },
+  silhouetteName: {
+    marginTop: Spacing.xs,
+  },
+  checkBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
   },
 });

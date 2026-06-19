@@ -13,6 +13,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { supabase } from "@/lib/supabase";
+import { useLastOdometer } from "@/hooks/useLastOdometer";
 import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
 import { Select } from "@/components/Select";
@@ -35,6 +36,8 @@ export default function ElectricChargeEditScreen() {
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  const { data: lastOdo } = useLastOdometer(activeVehicle?.id, { id: id as string, type: "electric" });
 
   const [dateStr, setDateStr] = useState("");
   const [odometer, setOdometer] = useState("");
@@ -328,6 +331,15 @@ export default function ElectricChargeEditScreen() {
             error={odometerError}
           />
 
+          {lastOdo !== null && (
+            <View style={styles.odoBadge}>
+              <Ionicons name="speedometer-outline" size={14} color={Colors.primary600} />
+              <Text variant="caption" color="primary600" weight="600">
+                Último registrado: {lastOdo.toLocaleString("es-CO")} km
+              </Text>
+            </View>
+          )}
+
           <Input
             label="Cantidad de Energía (kWh) *"
             value={kwhCharged}
@@ -407,4 +419,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   submitButton: { marginTop: Spacing.md, marginBottom: Spacing.xl },
+  odoBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary50,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    alignSelf: "flex-start",
+    marginTop: -Spacing.xs,
+    marginBottom: Spacing.xs,
+    gap: 4,
+  },
 });

@@ -13,6 +13,8 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { supabase } from "@/lib/supabase";
+import * as Location from "expo-location";
+import { useLastOdometer } from "@/hooks/useLastOdometer";
 import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
@@ -28,12 +30,30 @@ export default function FuelLogEditScreen() {
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
 
+  // Hook for last odometer (excluding this record)
+  const { data: lastOdo } = useLastOdometer(activeVehicle?.id, {
+    id: id as string,
+    type: "fuel",
+  });
+
+  // States
   const [dateStr, setDateStr] = useState("");
   const [odometer, setOdometer] = useState("");
+
+  // Tridente calculator states
+  const [calcMode, setCalcMode] = useState<"gallons" | "price">("gallons");
   const [gallons, setGallons] = useState("");
   const [amount, setAmount] = useState("");
-  const [fullTank, setFullTank] = useState(true);
+  const [pricePerGallon, setPricePerGallon] = useState("");
 
+  // Gas station states
+  const [stationName, setStationName] = useState("");
+  const [stationAddress, setStationAddress] = useState("");
+  const [stationCity, setStationCity] = useState("");
+  const [gpsStatus, setGpsStatus] = useState<"idle" | "loading" | "success" | "denied" | "error">("idle");
+  const [gpsMessage, setGpsMessage] = useState("");
+
+  const [fullTank, setFullTank] = useState(true);
   const [loading, setLoading] = useState(false);
 
   // Errors state
@@ -41,6 +61,7 @@ export default function FuelLogEditScreen() {
   const [odometerError, setOdometerError] = useState("");
   const [gallonsError, setGallonsError] = useState("");
   const [amountError, setAmountError] = useState("");
+  const [priceError, setPriceError] = useState("");
 
   useEffect(() => {
     if (user && id) {
@@ -60,7 +81,7 @@ export default function FuelLogEditScreen() {
 
       const { data: record, error } = await supabase
         .from("fuel_logs")
-        .select("*")
+        .select("*, gas_stations(*)")
         .eq("id", id)
         .eq("user_id", user?.id)
         .single();
@@ -72,7 +93,29 @@ export default function FuelLogEditScreen() {
       setGallons(record.gallons.toString());
       setAmount(record.amount_cop.toString());
       setFullTank(record.full_tank);
-    } catch {
+
+      // Price per gallon
+      if (record.price_per_gallon) {
+        setPricePerGallon(record.price_per_gallon.toString());
+      } else {
+        // Fallback calculations for historical logs
+        const amt = parseFloat(record.amount_cop);
+        const gals = parseFloat(record.gallons);
+        if (gals > 0) {
+          setPricePerGallon((amt / gals).toFixed(2));
+        } else {
+          setPricePerGallon("");
+        }
+      }
+
+      // Station details
+      if (record.gas_stations) {
+        setStationName(record.gas_stations.name || "");
+        setStationAddress(record.gas_stations.address || "");
+        setStationCity(record.gas_stations.city || "");
+      }
+    } catch (err) {
+      console.error("Error loading record:", err);
       showAlert(
         "Error",
         "No se pudo cargar el registro.",
@@ -84,12 +127,120 @@ export default function FuelLogEditScreen() {
     }
   };
 
+  // Tridente Calculator Handlers
+  const handleAmountChange = (val: string) => {
+    setAmount(val);
+    const amtVal = parseFloat(val);
+    if (calcMode === "gallons") {
+      const priceVal = parseFloat(pricePerGallon);
+      if (!isNaN(amtVal) && !isNaN(priceVal) && priceVal > 0) {
+        setGallons((amtVal / priceVal).toFixed(3));
+      } else {
+        setGallons("");
+      }
+    } else {
+      const galVal = parseFloat(gallons);
+      if (!isNaN(amtVal) && !isNaN(galVal) && galVal > 0) {
+        setPricePerGallon((amtVal / galVal).toFixed(2));
+      } else {
+        setPricePerGallon("");
+      }
+    }
+  };
+
+  const handlePriceChange = (val: string) => {
+    setPricePerGallon(val);
+    if (calcMode === "gallons") {
+      const amtVal = parseFloat(amount);
+      const priceVal = parseFloat(val);
+      if (!isNaN(amtVal) && !isNaN(priceVal) && priceVal > 0) {
+        setGallons((amtVal / priceVal).toFixed(3));
+      } else {
+        setGallons("");
+      }
+    }
+  };
+
+  const handleGallonsChange = (val: string) => {
+    setGallons(val);
+    if (calcMode === "price") {
+      const amtVal = parseFloat(amount);
+      const galVal = parseFloat(val);
+      if (!isNaN(amtVal) && !isNaN(galVal) && galVal > 0) {
+        setPricePerGallon((amtVal / galVal).toFixed(2));
+      } else {
+        setPricePerGallon("");
+      }
+    }
+  };
+
+  const handleModeChange = (mode: "gallons" | "price") => {
+    setCalcMode(mode);
+    const amtVal = parseFloat(amount);
+    if (mode === "gallons") {
+      const priceVal = parseFloat(pricePerGallon);
+      if (!isNaN(amtVal) && !isNaN(priceVal) && priceVal > 0) {
+        setGallons((amtVal / priceVal).toFixed(3));
+      } else {
+        setGallons("");
+      }
+    } else {
+      const galVal = parseFloat(gallons);
+      if (!isNaN(amtVal) && !isNaN(galVal) && galVal > 0) {
+        setPricePerGallon((amtVal / galVal).toFixed(2));
+      } else {
+        setPricePerGallon("");
+      }
+    }
+  };
+
+  // GPS Geolocation Handler
+  const handleGetLocation = async () => {
+    setGpsStatus("loading");
+    setGpsMessage("");
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setGpsStatus("denied");
+        setGpsMessage("Permiso de ubicación denegado. Ingresa la estación manualmente.");
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const { latitude, longitude } = loc.coords;
+
+      const geo = await Location.reverseGeocodeAsync({ latitude, longitude });
+      if (geo && geo.length > 0) {
+        const first = geo[0];
+        const street = first.street || "";
+        const nameNum = first.streetNumber || "";
+        const city = first.city || first.subregion || "";
+        const formattedAddress = `${street} ${nameNum}`.trim() || first.formattedAddress || "Ubicación GPS";
+        
+        setStationAddress(formattedAddress);
+        setStationCity(city);
+        setStationName(first.name || "Estación de Servicio");
+        setGpsStatus("success");
+      } else {
+        setGpsStatus("error");
+        setGpsMessage("No se pudo obtener la dirección. Intenta de nuevo o ingresa la estación manualmente.");
+      }
+    } catch (err) {
+      console.error("GPS Error:", err);
+      setGpsStatus("error");
+      setGpsMessage("No se pudo obtener la ubicación. Intenta de nuevo o ingresa la estación manualmente.");
+    }
+  };
+
   const validate = () => {
     let isValid = true;
     setDateError("");
     setOdometerError("");
     setGallonsError("");
     setAmountError("");
+    setPriceError("");
 
     if (!dateStr.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
       setDateError("Formato de fecha inválido (AAAA-MM-DD)");
@@ -105,15 +256,6 @@ export default function FuelLogEditScreen() {
       isValid = false;
     }
 
-    const galNum = parseFloat(gallons);
-    if (!gallons) {
-      setGallonsError("Los galones son requeridos");
-      isValid = false;
-    } else if (isNaN(galNum) || galNum <= 0) {
-      setGallonsError("Los galones deben ser mayores a 0");
-      isValid = false;
-    }
-
     const amtNum = parseFloat(amount);
     if (!amount) {
       setAmountError("El monto es requerido");
@@ -121,6 +263,26 @@ export default function FuelLogEditScreen() {
     } else if (isNaN(amtNum) || amtNum <= 0) {
       setAmountError("El monto debe ser mayor a 0");
       isValid = false;
+    }
+
+    if (calcMode === "gallons") {
+      const priceNum = parseFloat(pricePerGallon);
+      if (!pricePerGallon) {
+        setPriceError("El precio por galón es requerido");
+        isValid = false;
+      } else if (isNaN(priceNum) || priceNum <= 0) {
+        setPriceError("El precio debe ser mayor a 0");
+        isValid = false;
+      }
+    } else {
+      const galNum = parseFloat(gallons);
+      if (!gallons) {
+        setGallonsError("La cantidad de galones es requerida");
+        isValid = false;
+      } else if (isNaN(galNum) || galNum <= 0) {
+        setGallonsError("Los galones deben ser mayores a 0");
+        isValid = false;
+      }
     }
 
     return isValid;
@@ -133,6 +295,7 @@ export default function FuelLogEditScreen() {
     const currentOdo = parseFloat(odometer);
     const currentGal = parseFloat(gallons);
     const currentAmount = parseFloat(amount);
+    const currentPrice = parseFloat(pricePerGallon);
 
     setLoading(true);
 
@@ -148,14 +311,13 @@ export default function FuelLogEditScreen() {
         .from("fuel_logs")
         .select("odometer")
         .eq("vehicle_id", activeVehicle.id)
-        .lt("odometer", currentOdo) // Solo odómetros menores (anteriores cronológicamente)
+        .lt("odometer", currentOdo)
         .order("odometer", { ascending: false })
         .limit(1);
 
       if (previousLogs && previousLogs.length > 0) {
         const latestOdo = parseFloat(previousLogs[0].odometer);
         if (currentOdo <= latestOdo && latestOdo !== parseFloat(odometer)) {
-          // El && !== protege de que choque con sí mismo si no cambió de valor
           setOdometerError(`Debe ser mayor al odómetro anterior (${latestOdo} km)`);
           setLoading(false);
           return;
@@ -165,7 +327,6 @@ export default function FuelLogEditScreen() {
       let calculatedConsumption = null;
 
       if (fullTank) {
-        // Encontrar tanque lleno ANTERIOR al actual
         const { data: lastFullLogs } = await supabase
           .from("fuel_logs")
           .select("odometer")
@@ -180,7 +341,7 @@ export default function FuelLogEditScreen() {
           .from("fuel_logs")
           .select("gallons, id")
           .eq("vehicle_id", activeVehicle.id)
-          .lt("odometer", currentOdo); // solo menores a este
+          .lt("odometer", currentOdo);
 
         if (lastFullLogs && lastFullLogs.length > 0) {
           baselineOdo = parseFloat(lastFullLogs[0].odometer);
@@ -199,6 +360,44 @@ export default function FuelLogEditScreen() {
         }
       }
 
+      // 4. Estación de Servicio - Deduplicación y Guardado
+      let stationId = null;
+      if (stationName.trim() || stationAddress.trim()) {
+        const nameVal = stationName.trim();
+        const addrVal = stationAddress.trim();
+        const cityVal = stationCity.trim() || "Bogotá";
+
+        try {
+          const { data: existing } = await supabase
+            .from("gas_stations")
+            .select("id")
+            .ilike("name", nameVal)
+            .ilike("city", cityVal)
+            .limit(1);
+
+          if (existing && existing.length > 0) {
+            stationId = existing[0].id;
+          } else {
+            const { data: newStation, error: insertErr } = await supabase
+              .from("gas_stations")
+              .insert({
+                name: nameVal,
+                address: addrVal,
+                city: cityVal,
+              })
+              .select("id")
+              .single();
+
+            if (!insertErr && newStation) {
+              stationId = newStation.id;
+            }
+          }
+        } catch (stError) {
+          console.error("Error processing station:", stError);
+          // Fallback, el registro de combustible sigue adelante sin bloquear
+        }
+      }
+
       const { error } = await supabase
         .from("fuel_logs")
         .update({
@@ -208,6 +407,8 @@ export default function FuelLogEditScreen() {
           amount_cop: currentAmount,
           full_tank: fullTank,
           consumption_km_gal: calculatedConsumption,
+          price_per_gallon: currentPrice,
+          station_id: stationId,
         })
         .eq("id", id)
         .eq("user_id", user.id);
@@ -345,27 +546,88 @@ export default function FuelLogEditScreen() {
           />
 
           <Input
-            label="Odómetro Actual (Kilometraje)"
+            label="Odómetro Actual (Kilometraje) *"
             value={odometer}
             onChangeText={setOdometer}
             keyboardType="numeric"
             error={odometerError}
           />
 
+          {lastOdo !== null && (
+            <View style={styles.odoBadge}>
+              <Ionicons name="speedometer-outline" size={14} color={Colors.primary600} />
+              <Text variant="caption" color="primary600" weight="600">
+                Último registrado: {lastOdo.toLocaleString("es-CO")} km
+              </Text>
+            </View>
+          )}
+
+          {/* Segment Selector: Calculation Mode */}
+          <View style={styles.selectorGroup}>
+            <Text variant="caption" color="gray600" style={styles.selectorLabel}>
+              Método de Registro
+            </Text>
+            <View style={styles.segmentedControl}>
+              <TouchableOpacity
+                onPress={() => handleModeChange("gallons")}
+                style={[
+                  styles.segmentOption,
+                  calcMode === "gallons" && styles.segmentOptionActive,
+                ]}
+              >
+                <Text
+                  variant="caption"
+                  color={calcMode === "gallons" ? "white" : "gray600"}
+                  weight="600"
+                >
+                  Por Precio del Galón
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleModeChange("price")}
+                style={[
+                  styles.segmentOption,
+                  calcMode === "price" && styles.segmentOptionActive,
+                ]}
+              >
+                <Text
+                  variant="caption"
+                  color={calcMode === "price" ? "white" : "gray600"}
+                  weight="600"
+                >
+                  Por Galones
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <Input
-            label="Cantidad (Galones)"
-            value={gallons}
-            onChangeText={setGallons}
+            label="Costo Total (COP) *"
+            placeholder="Ej: 120000"
+            value={amount}
+            onChangeText={handleAmountChange}
             keyboardType="numeric"
-            error={gallonsError}
+            error={amountError}
           />
 
           <Input
-            label="Costo Total (COP)"
-            value={amount}
-            onChangeText={setAmount}
+            label={calcMode === "price" ? "Precio por Galón (Autocalculado)" : "Precio por Galón (COP/gal) *"}
+            placeholder="Ej: 15400"
+            value={pricePerGallon}
+            onChangeText={handlePriceChange}
             keyboardType="numeric"
-            error={amountError}
+            editable={calcMode === "gallons"}
+            error={priceError}
+          />
+
+          <Input
+            label={calcMode === "gallons" ? "Cantidad (Galones - Autocalculado)" : "Cantidad (Galones) *"}
+            placeholder="Ej: 8.5"
+            value={gallons}
+            onChangeText={handleGallonsChange}
+            keyboardType="numeric"
+            editable={calcMode === "price"}
+            error={gallonsError}
           />
 
           {fullTank && (
@@ -381,6 +643,57 @@ export default function FuelLogEditScreen() {
               </Text>
             </View>
           )}
+
+          {/* Gas Station Section */}
+          <View style={styles.sectionHeaderRow}>
+            <Ionicons name="location-outline" size={20} color={Colors.primary500} />
+            <Text variant="sectionTitle" color="gray900" weight="600">
+              Estación de Servicio (Opcional)
+            </Text>
+          </View>
+
+          <View style={styles.stationCard}>
+            <TouchableOpacity
+              style={[styles.gpsButton, gpsStatus === "loading" && styles.gpsButtonLoading]}
+              onPress={handleGetLocation}
+              disabled={gpsStatus === "loading"}
+            >
+              {gpsStatus === "loading" ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <>
+                  <Ionicons name="navigate-outline" size={18} color={Colors.white} />
+                  <Text variant="body" color="white" weight="600" style={styles.gpsButtonText}>
+                    Usar Ubicación por GPS
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {gpsMessage ? (
+              <Text
+                variant="caption"
+                color={gpsStatus === "denied" ? "warning" : "danger"}
+                style={styles.gpsStatusText}
+              >
+                {gpsMessage}
+              </Text>
+            ) : null}
+
+            <Input
+              label="Nombre de la Estación"
+              placeholder="Ej: Texaco Calle 100"
+              value={stationName}
+              onChangeText={setStationName}
+            />
+
+            <Input
+              label="Dirección de la Estación"
+              placeholder="Ej: Calle 100 #15-20"
+              value={stationAddress}
+              onChangeText={setStationAddress}
+            />
+          </View>
 
           <Button
             title="Actualizar Registro"
@@ -445,4 +758,53 @@ const styles = StyleSheet.create({
   infoIcon: { marginRight: Spacing.sm },
   infoText: { flex: 1, lineHeight: 16 },
   submitButton: { marginTop: Spacing.md, marginBottom: Spacing.xl },
+  odoBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary50,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    alignSelf: "flex-start",
+    marginTop: -Spacing.xs,
+    marginBottom: Spacing.sm,
+    gap: 4,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
+  stationCard: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.sm,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.gray200,
+    gap: Spacing.xs,
+  },
+  gpsButton: {
+    height: 48,
+    backgroundColor: Colors.primary500,
+    borderRadius: Radius.sm,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  gpsButtonLoading: {
+    backgroundColor: Colors.primary600,
+    opacity: 0.8,
+  },
+  gpsButtonText: {
+    fontSize: 14,
+  },
+  gpsStatusText: {
+    marginBottom: Spacing.sm,
+    marginLeft: 4,
+    lineHeight: 16,
+  },
 });

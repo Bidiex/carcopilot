@@ -55,6 +55,7 @@ export const Input: React.FC<CustomInputProps> = ({
           styles.inputWrapper,
           isFocused && styles.inputWrapperFocused,
           error ? styles.inputWrapperError : null,
+          props.editable === false ? { backgroundColor: Colors.gray200, opacity: 0.7 } : null,
         ]}
       >
         {leftIcon && (

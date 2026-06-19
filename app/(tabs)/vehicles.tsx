@@ -156,7 +156,13 @@ export default function VehiclesScreen() {
                       style={styles.footerIcon}
                     />
                     <Text variant="caption" color="gray600" weight="500">
-                      {vehicle.propulsion === "electric" ? "Eléctrico" : "Combustión"}
+                      {vehicle.propulsion === "electric"
+                        ? "Eléctrico"
+                        : vehicle.fuel_type === "diesel"
+                        ? "Combustión (Diésel)"
+                        : `Combustión (Gasolina ${
+                            vehicle.gasoline_subtype === "extra" ? "Extra" : "Corriente"
+                          })`}
                     </Text>
                   </View>
 

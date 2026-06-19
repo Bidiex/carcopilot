@@ -20,6 +20,7 @@ import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { scheduleDocumentReminder, cancelDocumentReminders } from "@/lib/notifications";
+import { getColombiaYear, addYearsToDateString } from "@/lib/date";
 
 const TAX_TYPES = [
   { label: "SOAT", value: "soat" },
@@ -130,7 +131,7 @@ export default function TaxEditScreen() {
         isValid = false;
       }
       const yearNum = parseInt(taxYear);
-      if (!taxYear || isNaN(yearNum) || yearNum < 2000 || yearNum > new Date().getFullYear() + 1) {
+      if (!taxYear || isNaN(yearNum) || yearNum < 2000 || yearNum > getColombiaYear() + 1) {
         setYearError("Año inválido");
         isValid = false;
       }
@@ -149,14 +150,7 @@ export default function TaxEditScreen() {
 
     setLoading(true);
 
-    const issueDateObj = new Date(issueDate);
-    const expiryDateObj = new Date(issueDateObj.getTime() + issueDateObj.getTimezoneOffset() * 60000);
-    expiryDateObj.setFullYear(expiryDateObj.getFullYear() + 1);
-    
-    const yy = expiryDateObj.getFullYear();
-    const mm = String(expiryDateObj.getMonth() + 1).padStart(2, "0");
-    const dd = String(expiryDateObj.getDate()).padStart(2, "0");
-    const expiryDate = `${yy}-${mm}-${dd}`;
+    const expiryDate = addYearsToDateString(issueDate, 1);
 
     let dbType = recordType;
     if (recordType === "tax_dept" || recordType === "tax_muni") {
