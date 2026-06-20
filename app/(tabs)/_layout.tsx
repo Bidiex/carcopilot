@@ -1,8 +1,26 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "@/constants/theme";
-import { Platform } from "react-native";
+import { Colors, Shadows } from "@/constants/theme";
+import { Platform, View, TouchableOpacity, StyleSheet } from "react-native";
 import { useStartupRecalculation } from "@/hooks/useStartupRecalculation";
+import { LinearGradient } from "expo-linear-gradient";
+
+const AITabBarButton = ({ children, onPress }: any) => (
+  <TouchableOpacity
+    style={styles.aiButtonContainer}
+    onPress={onPress}
+    activeOpacity={0.8}
+  >
+    <LinearGradient
+      colors={[Colors.gradientStart, Colors.gradientEnd]}
+      style={styles.aiButton}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      {children}
+    </LinearGradient>
+  </TouchableOpacity>
+);
 
 export default function TabLayout() {
   useStartupRecalculation();
@@ -54,6 +72,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="ai"
+        options={{
+          title: "Copilot",
+          tabBarLabel: () => null,
+          tabBarIcon: () => (
+            <Ionicons name="sparkles" size={28} color={Colors.white} />
+          ),
+          tabBarButton: (props) => <AITabBarButton {...props} />,
+        }}
+      />
+      <Tabs.Screen
         name="vehicles"
         options={{
           title: "Vehículos",
@@ -82,3 +111,19 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  aiButtonContainer: {
+    top: -20,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Shadows.floating,
+  },
+  aiButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

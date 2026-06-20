@@ -22,16 +22,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { VehiclePicker, VehiclePickerPill } from "@/components/VehiclePicker";
 import { QuickActionMenu } from "@/components/QuickActionMenu";
 import { LineChart } from "react-native-gifted-charts";
+import { VEHICLE_IMAGES } from "@/constants/vehicles";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-const VEHICLE_IMAGES: { [key: string]: any } = {
-  "car_model1.webp": require("@/assets/cars/car_model1.webp"),
-  "car_model2.webp": require("@/assets/cars/car_model2.webp"),
-  "car_model3.webp": require("@/assets/cars/car_model3.webp"),
-  "car_model4.webp": require("@/assets/cars/car_model4.webp"),
-  "car_model5.webp": require("@/assets/cars/car_model5.webp"),
-};
 
 let dashboardCache: any = null;
 
@@ -214,7 +207,7 @@ export default function HomeScreen() {
 
           const sortedKeys = Object.keys(chartMap).sort();
           const masterData = sortedKeys.map(k => {
-            const dateObj = new Date(k + "-01");
+            const dateObj = new Date(k + "-01T12:00:00");
             const label = dateObj.toLocaleString('es-CO', { month: 'short' }).substring(0,3).toUpperCase();
             return {
               label,
@@ -449,7 +442,7 @@ export default function HomeScreen() {
                   <Ionicons name="calendar-outline" size={16} color={Colors.primary500} />
                   <Text variant="smallLabel" color="gray500" weight="600">ÚLT. TANQUEO</Text>
                 </View>
-                <Text variant="heading3" color="gray900" weight="700" style={{ marginTop: Spacing.xs }}>
+                <Text variant="heading2" color="gray900" weight="700" style={{ marginTop: Spacing.xs }}>
                   {fuelMetrics.daysSince !== null ? `${fuelMetrics.daysSince} días` : "--"}
                 </Text>
                 <Text variant="caption" color="gray500">{fuelMetrics.lastDate || "Sin datos"}</Text>
@@ -457,10 +450,10 @@ export default function HomeScreen() {
 
               <Card variant="secondary" style={styles.metricCard}>
                 <View style={styles.metricHeader}>
-                  <Ionicons name="document-text-outline" size={16} color={Colors.warning500} />
+                  <Ionicons name="document-text-outline" size={16} color={Colors.warning} />
                   <Text variant="smallLabel" color="gray500" weight="600">VENCE SOAT</Text>
                 </View>
-                <Text variant="heading3" color={soatDays !== null && soatDays < 30 ? "danger" : "gray900"} weight="700" style={{ marginTop: Spacing.xs }}>
+                <Text variant="heading2" color={soatDays !== null && soatDays < 30 ? "danger" : "gray900"} weight="700" style={{ marginTop: Spacing.xs }}>
                   {soatDays !== null ? `${soatDays} días` : "--"}
                 </Text>
                 <Text variant="caption" color="gray500">
@@ -475,7 +468,7 @@ export default function HomeScreen() {
                   <Ionicons name="speedometer-outline" size={16} color={Colors.primary500} />
                   <Text variant="smallLabel" color="gray500" weight="600">PROM. KM / DÍA</Text>
                 </View>
-                <Text variant="heading3" color="gray900" weight="700" style={{ marginTop: Spacing.xs }}>
+                <Text variant="heading2" color="gray900" weight="700" style={{ marginTop: Spacing.xs }}>
                   {fuelMetrics.avgKmPerDay !== null ? `${fuelMetrics.avgKmPerDay.toFixed(1)} km` : "--"}
                 </Text>
               </Card>
@@ -485,27 +478,27 @@ export default function HomeScreen() {
                   <Ionicons name="time-outline" size={16} color={Colors.primary500} />
                   <Text variant="smallLabel" color="gray500" weight="600">DÍAS E. TANQUEO</Text>
                 </View>
-                <Text variant="heading3" color="gray900" weight="700" style={{ marginTop: Spacing.xs }}>
+                <Text variant="heading2" color="gray900" weight="700" style={{ marginTop: Spacing.xs }}>
                   {fuelMetrics.avgDaysBetweenLogs !== null ? `${fuelMetrics.avgDaysBetweenLogs.toFixed(1)} días` : "--"}
                 </Text>
               </Card>
             </View>
 
             <View style={styles.metricsGrid}>
-              <Card variant="secondary" style={[styles.metricCard, { flex: 1 }]}>
+              <Card variant="secondary" style={[styles.metricCard, { flex: 1 }] as any}>
                 <View style={styles.metricHeader}>
-                  <Ionicons name="pricetag-outline" size={16} color={Colors.success500} />
+                  <Ionicons name="pricetag-outline" size={16} color={Colors.success} />
                   <Text variant="smallLabel" color="gray500" weight="600">PRECIO GALÓN HISTÓRICO</Text>
                 </View>
                 <View style={styles.priceRow}>
                   <View>
                     <Text variant="caption" color="gray500">Mínimo</Text>
-                    <Text variant="body" color="gray900" weight="700">{fuelMetrics.minPrice ? formatCOP(fuelMetrics.minPrice) : "--"}</Text>
+                    <Text variant="body" color="success" weight="700">{fuelMetrics.minPrice ? formatCOP(fuelMetrics.minPrice) : "--"}</Text>
                   </View>
                   <View style={styles.priceDivider} />
                   <View>
                     <Text variant="caption" color="gray500">Máximo</Text>
-                    <Text variant="body" color="gray900" weight="700">{fuelMetrics.maxPrice ? formatCOP(fuelMetrics.maxPrice) : "--"}</Text>
+                    <Text variant="body" color="danger" weight="700">{fuelMetrics.maxPrice ? formatCOP(fuelMetrics.maxPrice) : "--"}</Text>
                   </View>
                 </View>
               </Card>
@@ -552,8 +545,8 @@ export default function HomeScreen() {
                           </Text>
                         </View>
                         <View style={styles.transAmount}>
-                          <Text variant="body" color="danger" weight="600">
-                            -{formatCOP(parseFloat(log.amount_cop))}
+                          <Text variant="body" color="primary500" weight="600">
+                            {formatCOP(parseFloat(log.amount_cop))}
                           </Text>
                         </View>
                       </TouchableOpacity>

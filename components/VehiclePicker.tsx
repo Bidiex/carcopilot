@@ -6,10 +6,12 @@ import {
   TouchableWithoutFeedback,
   StyleSheet,
   FlatList,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/Typography";
 import { Colors, Spacing, Radius, Shadows } from "@/constants/theme";
+import { VEHICLE_IMAGES } from "@/constants/vehicles";
 
 interface Vehicle {
   id: string;
@@ -17,6 +19,7 @@ interface Vehicle {
   custom_model?: string;
   plate?: string;
   propulsion?: string;
+  model_image?: string;
 }
 
 interface VehiclePickerProps {
@@ -121,15 +124,23 @@ export const VehiclePicker: React.FC<VehiclePickerProps> = ({
                         style={[
                           styles.optionIcon,
                           isSelected && styles.optionIconActive,
+                          item.model_image && { backgroundColor: "transparent" }
                         ]}
                       >
-                        <Ionicons
-                          name={icon as any}
-                          size={20}
-                          color={
-                            isSelected ? Colors.white : Colors.primary500
-                          }
-                        />
+                        {item.model_image && VEHICLE_IMAGES[item.model_image] ? (
+                          <Image
+                            source={VEHICLE_IMAGES[item.model_image]}
+                            style={{ width: 44, height: 30, resizeMode: "contain" }}
+                          />
+                        ) : (
+                          <Ionicons
+                            name={icon as any}
+                            size={20}
+                            color={
+                              isSelected ? Colors.white : Colors.primary500
+                            }
+                          />
+                        )}
                       </View>
                       <View style={styles.optionInfo}>
                         <Text
@@ -198,7 +209,14 @@ export const VehiclePickerPill: React.FC<VehiclePickerPillProps> = ({
       style={[styles.pill, isLight && { backgroundColor: "rgba(255,255,255,0.2)" }]} 
       onPress={onPress}
     >
-      <Ionicons name="car-outline" size={15} color={isLight ? Colors.white : Colors.primary500} />
+      {selected?.model_image && VEHICLE_IMAGES[selected.model_image] ? (
+        <Image 
+          source={VEHICLE_IMAGES[selected.model_image]} 
+          style={{ width: 32, height: 20, resizeMode: "contain" }} 
+        />
+      ) : (
+        <Ionicons name="car-outline" size={15} color={isLight ? Colors.white : Colors.primary500} />
+      )}
       <Text
         variant="smallLabel"
         color={isLight ? "white" : "primary500"}

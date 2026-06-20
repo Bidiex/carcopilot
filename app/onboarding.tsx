@@ -9,6 +9,7 @@ import {
   Image,
   Dimensions,
   Animated,
+  FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -23,6 +24,7 @@ import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
+import { VEHICLE_MODELS, VEHICLE_IMAGES, CAR_COLORS } from "@/constants/vehicles";
 
 const { width } = Dimensions.get("window");
 
@@ -49,6 +51,7 @@ const CAR_BRANDS = [
   { label: "Renault", value: "Renault" },
   { label: "Subaru", value: "Subaru" },
   { label: "Suzuki", value: "Suzuki" },
+  { label: "Tesla", value: "Tesla" },
   { label: "Toyota", value: "Toyota" },
   { label: "Volkswagen", value: "Volkswagen" },
   { label: "Volvo", value: "Volvo" },
@@ -67,7 +70,9 @@ const MOTO_BRANDS = [
   { label: "Kawasaki", value: "Kawasaki" },
   { label: "KTM", value: "KTM" },
   { label: "Kymco", value: "Kymco" },
+  { label: "Mobulaa", value: "Mobulaa" },
   { label: "NIU", value: "NIU" },
+  { label: "Ofero", value: "Ofero" },
   { label: "Royal Enfield", value: "Royal Enfield" },
   { label: "Starker", value: "Starker" },
   { label: "Suzuki", value: "Suzuki" },
@@ -76,13 +81,7 @@ const MOTO_BRANDS = [
   { label: "Yamaha", value: "Yamaha" },
 ];
 
-const SILHOUETTES = [
-  { id: "car_model1.webp", name: "Hatchback Moderno", image: require("../assets/cars/car_model1.webp") },
-  { id: "car_model2.webp", name: "Sedán Deportivo", image: require("../assets/cars/car_model2.webp") },
-  { id: "car_model3.webp", name: "Camioneta SUV", image: require("../assets/cars/car_model3.webp") },
-  { id: "car_model4.webp", name: "Superdeportivo", image: require("../assets/cars/car_model4.webp") },
-  { id: "car_model5.webp", name: "Sedán Familiar", image: require("../assets/cars/car_model5.webp") },
-];
+
 
 const FUEL_TYPES = [
   { label: "Gasolina", value: "gasoline" },
@@ -113,7 +112,8 @@ export default function OnboardingScreen() {
   const [gasolineSubtype, setGasolineSubtype] = useState("corriente");
 
   // Silhouette Info (Step 4)
-  const [selectedSilhouette, setSelectedSilhouette] = useState("car_model1.webp");
+  const [selectedModelId, setSelectedModelId] = useState(VEHICLE_MODELS[0].id);
+  const [selectedColor, setSelectedColor] = useState(VEHICLE_MODELS[0].colors[0]);
 
   // Sign Up Info (Step 5)
   const [name, setName] = useState("");
@@ -141,13 +141,7 @@ export default function OnboardingScreen() {
   const [scaleComb] = useState(new Animated.Value(1));
   const [scaleElec] = useState(new Animated.Value(1));
 
-  // Silhouette Animated Values
-  const [silhouetteAnimations] = useState(() =>
-    SILHOUETTES.reduce((acc, sil) => {
-      acc[sil.id] = new Animated.Value(1);
-      return acc;
-    }, {} as Record<string, Animated.Value>)
-  );
+
 
   // React to selection changes with smooth spring animations
   const animateSelection = (type: "car" | "moto" | "combustion" | "electric") => {
@@ -180,38 +174,6 @@ export default function OnboardingScreen() {
       animateSelection(propulsion);
     }
   }, [step, vehicleType, propulsion]);
-
-  const animateSilhouette = (id: string) => {
-    const anim = silhouetteAnimations[id];
-    if (anim) {
-      // Bounce effect on selected
-      anim.setValue(0.92);
-      Animated.spring(anim, {
-        toValue: 1.06,
-        useNativeDriver: true,
-        tension: 100,
-        friction: 6,
-      }).start();
-
-      // Return other silhouttes to default size
-      Object.keys(silhouetteAnimations).forEach((key) => {
-        if (key !== id) {
-          Animated.spring(silhouetteAnimations[key], {
-            toValue: 1.0,
-            useNativeDriver: true,
-            tension: 60,
-            friction: 6,
-          }).start();
-        }
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (step === 4) {
-      animateSilhouette(selectedSilhouette);
-    }
-  }, [step]);
 
   const validateVehicleData = () => {
     let isValid = true;
@@ -333,11 +295,6 @@ export default function OnboardingScreen() {
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const selectSilhouetteHandler = (id: string) => {
-    setSelectedSilhouette(id);
-    animateSilhouette(id);
-  };
-
   const handleSignup = async () => {
     if (!validateSignupData()) return;
 
@@ -354,7 +311,7 @@ export default function OnboardingScreen() {
       batteryCapacity: propulsion === "electric" ? parseFloat(batteryCapacity) : null,
       fuelType: propulsion === "combustion" ? fuelType : null,
       gasolineSubtype: (propulsion === "combustion" && fuelType === "gasoline") ? gasolineSubtype : null,
-      model_image: selectedSilhouette,
+      model_image: `${selectedModelId}_${selectedColor}.webp`,
     };
 
     try {
@@ -770,63 +727,78 @@ export default function OnboardingScreen() {
             </View>
           )}
 
-          {/* STEP 4: SILHOUETTE SELECTOR (BOUNCING CARDS) */}
+          {/* STEP 4: CAROUSEL & COLORS */}
           {step === 4 && (
             <View style={styles.formContainer}>
               <Text variant="heading1" color="gray900" weight="700" style={styles.stepTitle}>
-                Elige la silueta de tu vehículo 🎨
+                Personaliza tu Vehículo 🎨
               </Text>
               <Text variant="body" color="gray500" style={styles.stepSubtitle}>
-                {vehicleType === "moto"
-                  ? "Como manejas una moto, puedes elegir uno de estos estilos de carro para tu panel principal o continuar con el ícono de moto estándar."
-                  : "Selecciona el estilo que mejor represente a tu vehículo en el panel principal."}
+                Selecciona la silueta y el color que más se parezca a tu máquina real.
               </Text>
 
-              <View style={styles.silhouetteGrid}>
-                {SILHOUETTES.map((sil) => {
-                  const isSelected = selectedSilhouette === sil.id;
-                  const anim = silhouetteAnimations[sil.id];
-                  const scaleVal = anim || 1.0;
+              <View style={styles.carouselWrapper}>
+                <FlatList
+                  data={VEHICLE_MODELS}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  snapToInterval={width * 0.8 + Spacing.md}
+                  decelerationRate="fast"
+                  contentContainerStyle={styles.carouselContainer}
+                  keyExtractor={item => item.id}
+                  renderItem={({ item }) => {
+                    const isSelected = selectedModelId === item.id;
+                    const currentColor = isSelected ? selectedColor : item.colors[0];
+                    const imageKey = `${item.id}_${currentColor}.webp`;
 
-                  return (
-                    <Animated.View
-                      key={sil.id}
-                      style={{
-                        transform: [{ scale: scaleVal }],
-                        width: (width - Layout.screenPadding * 2 - Spacing.md) / 2,
-                      }}
-                    >
+                    return (
                       <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => selectSilhouetteHandler(sil.id)}
-                        style={[
-                          styles.silhouetteCard,
-                          isSelected && styles.silhouetteCardSelected,
-                        ]}
+                        style={[styles.carouselItem, isSelected && styles.carouselItemSelected]}
+                        onPress={() => {
+                          setSelectedModelId(item.id);
+                          if (!item.colors.includes(selectedColor)) {
+                            setSelectedColor(item.colors[0]);
+                          }
+                        }}
+                        activeOpacity={0.9}
                       >
-                        <Image source={sil.image} style={styles.silhouetteImg} />
-                        <Text
-                          variant="caption"
-                          color={isSelected ? "primary500" : "gray700"}
-                          weight={isSelected ? "600" : "500"}
-                          style={styles.silhouetteName}
-                          align="center"
-                        >
-                          {sil.name}
+                        <View style={styles.carouselImageContainer}>
+                          <Image source={VEHICLE_IMAGES[imageKey]} style={styles.carouselImage} />
+                        </View>
+                        <Text variant="heading2" color={isSelected ? "primary500" : "gray700"} weight={isSelected ? "700" : "600"} align="center" style={styles.carouselModelName}>
+                          {item.name}
                         </Text>
+                        
+                        <View style={styles.colorDotsContainer}>
+                          {item.colors.map(color => (
+                            <TouchableOpacity
+                              key={color}
+                              style={[
+                                styles.colorDot,
+                                { backgroundColor: CAR_COLORS[color] },
+                                (isSelected && selectedColor === color) && styles.colorDotSelected
+                              ]}
+                              onPress={() => {
+                                setSelectedModelId(item.id);
+                                setSelectedColor(color);
+                              }}
+                            />
+                          ))}
+                        </View>
+                        
                         {isSelected && (
                           <View style={styles.checkBadge}>
-                            <Ionicons name="checkmark-circle" size={20} color={Colors.primary500} />
+                            <Ionicons name="checkmark-circle" size={24} color={Colors.primary500} />
                           </View>
                         )}
                       </TouchableOpacity>
-                    </Animated.View>
-                  );
-                })}
+                    );
+                  }}
+                />
               </View>
 
               <Button
-                title="Continuar"
+                title="Siguiente"
                 onPress={handleNextStep}
                 style={styles.nextButton}
               />
@@ -1053,39 +1025,71 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     width: "100%",
   },
-  silhouetteGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+  carouselWrapper: {
+    marginHorizontal: -Layout.screenPadding,
+  },
+  carouselContainer: {
+    paddingHorizontal: Layout.screenPadding,
     gap: Spacing.md,
-    marginVertical: Spacing.sm,
+    paddingVertical: Spacing.sm,
   },
-  silhouetteCard: {
+  carouselItem: {
+    width: width * 0.8,
     backgroundColor: Colors.white,
-    borderRadius: Radius.sm,
-    borderWidth: 1.5,
-    borderColor: Colors.gray200,
-    padding: Spacing.sm,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    paddingVertical: Spacing.xl,
     alignItems: "center",
+    borderWidth: 2,
+    borderColor: Colors.gray200,
+    ...Shadows.md,
     position: "relative",
+    minHeight: 280,
   },
-  silhouetteCardSelected: {
+  carouselItemSelected: {
     borderColor: Colors.primary500,
     backgroundColor: "rgba(77, 77, 255, 0.02)",
   },
-  silhouetteImg: {
+  carouselImageContainer: {
     width: "100%",
-    height: 80,
-    resizeMode: "contain",
-    marginBottom: Spacing.xs,
+    height: 180,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
   },
-  silhouetteName: {
+  carouselImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "contain",
+  },
+  carouselModelName: {
+    marginBottom: Spacing.md,
+  },
+  colorDotsContainer: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    justifyContent: "center",
+    flexWrap: "wrap",
     marginTop: Spacing.xs,
+  },
+  colorDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: Colors.gray800,
+    ...Shadows.sm,
+  },
+  colorDotSelected: {
+    borderColor: Colors.primary500,
+    transform: [{ scale: 1.25 }],
   },
   checkBadge: {
     position: "absolute",
-    top: 6,
-    right: 6,
+    top: 16,
+    left: 16,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
   },
   signupButton: {
     marginTop: Spacing.md,

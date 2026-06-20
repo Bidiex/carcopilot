@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Animated,
+  FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -20,8 +22,9 @@ import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
 import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
-import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
+import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { VEHICLE_MODELS, VEHICLE_IMAGES, CAR_COLORS } from "@/constants/vehicles";
 
 type VehicleType = "car" | "moto";
 type PropulsionType = "combustion" | "electric";
@@ -46,6 +49,7 @@ const CAR_BRANDS = [
   { label: "Renault", value: "Renault" },
   { label: "Subaru", value: "Subaru" },
   { label: "Suzuki", value: "Suzuki" },
+  { label: "Tesla", value: "Tesla" },
   { label: "Toyota", value: "Toyota" },
   { label: "Volkswagen", value: "Volkswagen" },
   { label: "Volvo", value: "Volvo" },
@@ -64,7 +68,9 @@ const MOTO_BRANDS = [
   { label: "Kawasaki", value: "Kawasaki" },
   { label: "KTM", value: "KTM" },
   { label: "Kymco", value: "Kymco" },
+  { label: "Mobulaa", value: "Mobulaa" },
   { label: "NIU", value: "NIU" },
+  { label: "Ofero", value: "Ofero" },
   { label: "Royal Enfield", value: "Royal Enfield" },
   { label: "Starker", value: "Starker" },
   { label: "Suzuki", value: "Suzuki" },
@@ -74,14 +80,6 @@ const MOTO_BRANDS = [
 ];
 
 const { width } = Dimensions.get("window");
-
-const SILHOUETTES = [
-  { id: "car_model1.webp", name: "Hatchback Moderno", image: require("../assets/cars/car_model1.webp") },
-  { id: "car_model2.webp", name: "Sedán Deportivo", image: require("../assets/cars/car_model2.webp") },
-  { id: "car_model3.webp", name: "Camioneta SUV", image: require("../assets/cars/car_model3.webp") },
-  { id: "car_model4.webp", name: "Superdeportivo", image: require("../assets/cars/car_model4.webp") },
-  { id: "car_model5.webp", name: "Sedán Familiar", image: require("../assets/cars/car_model5.webp") },
-];
 
 const FUEL_TYPES = [
   { label: "Gasolina", value: "gasoline" },
@@ -98,21 +96,25 @@ export default function VehicleNewScreen() {
   const { user } = useAuth();
   const { showAlert } = useAlert();
 
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  const [vehicleType, setVehicleType] = useState<VehicleType>("car");
+  const [propulsion, setPropulsion] = useState<PropulsionType>("combustion");
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
   const [plate, setPlate] = useState("");
   const [odometer, setOdometer] = useState("");
   const [batteryCapacity, setBatteryCapacity] = useState("");
-  const [vehicleType, setVehicleType] = useState<VehicleType>("car");
-  const [propulsion, setPropulsion] = useState<PropulsionType>("combustion");
   const [fuelType, setFuelType] = useState("gasoline");
   const [gasolineSubtype, setGasolineSubtype] = useState("corriente");
-  const [selectedSilhouette, setSelectedSilhouette] = useState("car_model1.webp");
 
-  const [loading, setLoading] = useState(false);
+  // Visuals
+  const [selectedModelId, setSelectedModelId] = useState(VEHICLE_MODELS[0].id);
+  const [selectedColor, setSelectedColor] = useState(VEHICLE_MODELS[0].colors[0]);
 
-  // Errors state
+  // Errors
   const [brandError, setBrandError] = useState("");
   const [modelError, setModelError] = useState("");
   const [yearError, setYearError] = useState("");
@@ -120,19 +122,53 @@ export default function VehicleNewScreen() {
   const [odometerError, setOdometerError] = useState("");
   const [batteryCapacityError, setBatteryCapacityError] = useState("");
 
-  const validate = () => {
+  const [scaleCar] = useState(new Animated.Value(1));
+  const [scaleMoto] = useState(new Animated.Value(1));
+  const [scaleComb] = useState(new Animated.Value(1));
+  const [scaleElec] = useState(new Animated.Value(1));
+
+  const animateSelection = (type: "car" | "moto" | "combustion" | "electric") => {
+    if (type === "car") {
+      Animated.parallel([
+        Animated.spring(scaleCar, { toValue: 1.06, useNativeDriver: true, tension: 80, friction: 6 }),
+        Animated.spring(scaleMoto, { toValue: 0.94, useNativeDriver: true, tension: 80, friction: 6 }),
+      ]).start();
+    } else if (type === "moto") {
+      Animated.parallel([
+        Animated.spring(scaleCar, { toValue: 0.94, useNativeDriver: true, tension: 80, friction: 6 }),
+        Animated.spring(scaleMoto, { toValue: 1.06, useNativeDriver: true, tension: 80, friction: 6 }),
+      ]).start();
+    } else if (type === "combustion") {
+      Animated.parallel([
+        Animated.spring(scaleComb, { toValue: 1.06, useNativeDriver: true, tension: 80, friction: 6 }),
+        Animated.spring(scaleElec, { toValue: 0.94, useNativeDriver: true, tension: 80, friction: 6 }),
+      ]).start();
+    } else if (type === "electric") {
+      Animated.parallel([
+        Animated.spring(scaleComb, { toValue: 0.94, useNativeDriver: true, tension: 80, friction: 6 }),
+        Animated.spring(scaleElec, { toValue: 1.06, useNativeDriver: true, tension: 80, friction: 6 }),
+      ]).start();
+    }
+  };
+
+  useEffect(() => {
+    if (step === 1) {
+      animateSelection(vehicleType);
+      animateSelection(propulsion);
+    }
+  }, [step, vehicleType, propulsion]);
+
+  const validateStep2 = () => {
     let isValid = true;
     setBrandError("");
     setModelError("");
     setYearError("");
     setPlateError("");
-    setOdometerError("");
 
     if (!brand) {
       setBrandError("La marca es requerida");
       isValid = false;
     }
-
     if (!model.trim()) {
       setModelError("El modelo es requerido");
       isValid = false;
@@ -169,6 +205,14 @@ export default function VehicleNewScreen() {
       }
     }
 
+    return isValid;
+  };
+
+  const validateStep3 = () => {
+    let isValid = true;
+    setOdometerError("");
+    setBatteryCapacityError("");
+
     const odoNum = parseFloat(odometer);
     if (!odometer) {
       setOdometerError("El odómetro inicial es requerido");
@@ -192,19 +236,27 @@ export default function VehicleNewScreen() {
     return isValid;
   };
 
+  const handleNextStep = () => {
+    if (step === 2 && !validateStep2()) return;
+    if (step === 3 && !validateStep3()) return;
+    setStep((prev) => Math.min(prev + 1, 4));
+  };
+
+  const handlePrevStep = () => {
+    setStep((prev) => Math.max(prev - 1, 1));
+  };
+
   const handleCreate = async () => {
     if (!user) return;
-    if (!validate()) return;
-
     setLoading(true);
     try {
-      // 1. Desactivar todos los vehículos existentes del usuario
       await supabase
         .from("vehicles")
         .update({ is_active: false })
         .eq("user_id", user.id);
 
-      // 2. Insertar nuevo vehículo como activo
+      const finalImage = `${selectedModelId}_${selectedColor}.webp`;
+
       const { error } = await supabase.from("vehicles").insert({
         user_id: user.id,
         custom_brand: brand.trim(),
@@ -217,7 +269,7 @@ export default function VehicleNewScreen() {
         battery_capacity_kwh: propulsion === "electric" ? parseFloat(batteryCapacity) : null,
         fuel_type: propulsion === "combustion" ? fuelType : null,
         gasoline_subtype: (propulsion === "combustion" && fuelType === "gasoline") ? gasolineSubtype : null,
-        model_image: selectedSilhouette,
+        model_image: finalImage,
         is_active: true,
       });
 
@@ -245,20 +297,33 @@ export default function VehicleNewScreen() {
     }
   };
 
+  const renderStepIndicator = () => {
+    return (
+      <View style={styles.indicatorContainer}>
+        {[1, 2, 3, 4].map((s) => (
+          <View
+            key={s}
+            style={[
+              styles.indicatorDot,
+              s <= step && styles.indicatorDotActive,
+            ]}
+          />
+        ))}
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
-        {/* Top Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <View style={styles.topHeader}>
+          <TouchableOpacity onPress={() => step > 1 ? handlePrevStep() : router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back-outline" size={24} color={Colors.gray900} />
           </TouchableOpacity>
-          <Text variant="heading2" color="gray900" weight="700">
-            Registrar Vehículo
-          </Text>
+          {renderStepIndicator()}
           <View style={{ width: 44 }} />
         </View>
 
@@ -266,228 +331,342 @@ export default function VehicleNewScreen() {
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* Segment Selector: Vehicle Type */}
-          <View style={styles.selectorGroup}>
-            <Text variant="caption" color="gray600" style={styles.selectorLabel}>
-              Tipo de Vehículo
-            </Text>
-            <View style={styles.segmentedControl}>
-              <TouchableOpacity
-                onPress={() => {
-                  setVehicleType("car");
-                  setBrand("");
-                }}
-                style={[
-                  styles.segmentOption,
-                  vehicleType === "car" && styles.segmentOptionActive,
-                ]}
-              >
-                <Text
-                  variant="caption"
-                  color={vehicleType === "car" ? "white" : "gray600"}
-                  weight="600"
-                >
-                  Carro
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setVehicleType("moto");
-                  setBrand("");
-                }}
-                style={[
-                  styles.segmentOption,
-                  vehicleType === "moto" && styles.segmentOptionActive,
-                ]}
-              >
-                <Text
-                  variant="caption"
-                  color={vehicleType === "moto" ? "white" : "gray600"}
-                  weight="600"
-                >
-                  Moto
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          {/* STEP 1: PROPULSION & VEHICLE TYPE */}
+          {step === 1 && (
+            <View style={styles.formContainer}>
+              <Text variant="heading1" color="gray900" weight="700" style={styles.stepTitle}>
+                ¿Qué máquina conduces? ⚡
+              </Text>
+              <Text variant="body" color="gray500" style={styles.stepSubtitle}>
+                Elige el tipo de transporte y su motorización para adaptar las métricas y cálculos.
+              </Text>
 
-          {/* Segment Selector: Propulsion */}
-          <View style={styles.selectorGroup}>
-            <Text variant="caption" color="gray600" style={styles.selectorLabel}>
-              Tipo de Combustible / Energía
-            </Text>
-            <View style={styles.segmentedControl}>
-              <TouchableOpacity
-                onPress={() => setPropulsion("combustion")}
-                style={[
-                  styles.segmentOption,
-                  propulsion === "combustion" && styles.segmentOptionActive,
-                ]}
-              >
-                <Text
-                  variant="caption"
-                  color={propulsion === "combustion" ? "white" : "gray600"}
-                  weight="600"
-                >
-                  Combustión
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setPropulsion("electric")}
-                style={[
-                  styles.segmentOption,
-                  propulsion === "electric" && styles.segmentOptionActive,
-                ]}
-              >
-                <Text
-                  variant="caption"
-                  color={propulsion === "electric" ? "white" : "gray600"}
-                  weight="600"
-                >
-                  Eléctrico
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {propulsion === "combustion" && (
-            <>
-              <Select
-                label="Tipo de Combustible *"
-                placeholder="Seleccionar tipo de combustible"
-                value={fuelType}
-                options={FUEL_TYPES}
-                onSelect={(val) => {
-                  setFuelType(val);
-                  if (val === "diesel") {
-                    setGasolineSubtype("");
-                  } else {
-                    setGasolineSubtype("corriente");
-                  }
-                }}
-              />
-
-              {fuelType === "gasoline" && (
-                <Select
-                  label="Subtipo de Gasolina *"
-                  placeholder="Seleccionar subtipo de gasolina"
-                  value={gasolineSubtype}
-                  options={GASOLINE_SUBTYPES}
-                  onSelect={setGasolineSubtype}
-                />
-              )}
-            </>
-          )}
-
-          <Select
-            label="Marca *"
-            placeholder="Seleccionar marca"
-            value={brand}
-            options={vehicleType === "car" ? CAR_BRANDS : MOTO_BRANDS}
-            onSelect={setBrand}
-            error={brandError}
-          />
-
-          <Input
-            label="Modelo *"
-            placeholder="Ej: 3, Corolla, Crypton..."
-            value={model}
-            onChangeText={setModel}
-            error={modelError}
-          />
-
-          <Input
-            label="Año *"
-            placeholder="Ej: 2022"
-            value={year}
-            onChangeText={setYear}
-            keyboardType="number-pad"
-            error={yearError}
-          />
-
-          <Input
-            label={
-              vehicleType === "moto" && propulsion === "electric"
-                ? "Placa (Opcional)"
-                : "Placa *"
-            }
-            placeholder={vehicleType === "car" ? "Ej: ABC123" : "Ej: ABC12A"}
-            value={plate}
-            onChangeText={(text) => setPlate(formatPlate(text, vehicleType))}
-            autoCapitalize="characters"
-            error={plateError}
-          />
-
-          <Input
-            label="Kilometraje Actual (Odómetro Inicial) *"
-            placeholder="Ej: 15400"
-            value={odometer}
-            onChangeText={setOdometer}
-            keyboardType="numeric"
-            error={odometerError}
-          />
-
-          {propulsion === "electric" && (
-            <Input
-              label="Capacidad de Batería (kWh) *"
-              placeholder="Ej: 40"
-              value={batteryCapacity}
-              onChangeText={setBatteryCapacity}
-              keyboardType="numeric"
-              error={batteryCapacityError}
-            />
-          )}
-
-          {/* Silhouette Selection */}
-          <View style={styles.selectorGroup}>
-            <Text variant="caption" color="gray600" style={styles.selectorLabel}>
-              Silueta del Vehículo
-            </Text>
-            <Text variant="caption" color="gray500" style={styles.selectorSubtitle}>
-              {vehicleType === "moto"
-                ? "Puedes seleccionar una silueta representativa de carro para el panel principal o continuar con el ícono de moto estándar."
-                : "Elige la silueta que mejor represente a tu vehículo en el panel principal."}
-            </Text>
-            <View style={styles.silhouetteGrid}>
-              {SILHOUETTES.map((sil) => {
-                const isSelected = selectedSilhouette === sil.id;
-                return (
+              <Text variant="body" color="gray700" weight="600" style={styles.selectorLabel}>
+                Tipo de Transporte
+              </Text>
+              <View style={styles.cardRow}>
+                <Animated.View style={{ transform: [{ scale: scaleCar }], flex: 1 }}>
                   <TouchableOpacity
-                    key={sil.id}
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedSilhouette(sil.id)}
+                    activeOpacity={0.9}
+                    onPress={() => setVehicleType("car")}
                     style={[
-                      styles.silhouetteCard,
-                      isSelected && styles.silhouetteCardSelected,
+                      styles.selectionCard,
+                      vehicleType === "car" && styles.selectionCardActive,
                     ]}
                   >
-                    <Image source={sil.image} style={styles.silhouetteImg} />
+                    <Ionicons
+                      name="car"
+                      size={36}
+                      color={vehicleType === "car" ? Colors.primary500 : Colors.gray500}
+                    />
                     <Text
-                      variant="caption"
-                      color={isSelected ? "primary500" : "gray700"}
-                      weight={isSelected ? "600" : "500"}
-                      style={styles.silhouetteName}
-                      align="center"
+                      variant="body"
+                      color={vehicleType === "car" ? "primary500" : "gray800"}
+                      weight="600"
+                      style={styles.cardSelectLabel}
                     >
-                      {sil.name}
+                      Carro
                     </Text>
-                    {isSelected && (
-                      <View style={styles.checkBadge}>
-                        <Ionicons name="checkmark-circle" size={18} color={Colors.primary500} />
-                      </View>
-                    )}
                   </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
+                </Animated.View>
 
-          <Button
-            title="Crear Vehículo"
-            onPress={handleCreate}
-            loading={loading}
-            style={styles.submitButton}
-          />
+                <Animated.View style={{ transform: [{ scale: scaleMoto }], flex: 1 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => setVehicleType("moto")}
+                    style={[
+                      styles.selectionCard,
+                      vehicleType === "moto" && styles.selectionCardActive,
+                    ]}
+                  >
+                    <Ionicons
+                      name="bicycle"
+                      size={36}
+                      color={vehicleType === "moto" ? Colors.primary500 : Colors.gray500}
+                    />
+                    <Text
+                      variant="body"
+                      color={vehicleType === "moto" ? "primary500" : "gray800"}
+                      weight="600"
+                      style={styles.cardSelectLabel}
+                    >
+                      Moto
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              </View>
+
+              <Text variant="body" color="gray700" weight="600" style={styles.selectorLabel}>
+                Tipo de Propulsión
+              </Text>
+              <View style={styles.cardRow}>
+                <Animated.View style={{ transform: [{ scale: scaleComb }], flex: 1 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => setPropulsion("combustion")}
+                    style={[
+                      styles.selectionCard,
+                      propulsion === "combustion" && styles.selectionCardActive,
+                    ]}
+                  >
+                    <Ionicons
+                      name="water"
+                      size={36}
+                      color={propulsion === "combustion" ? Colors.primary500 : Colors.gray500}
+                    />
+                    <Text
+                      variant="body"
+                      color={propulsion === "combustion" ? "primary500" : "gray800"}
+                      weight="600"
+                      style={styles.cardSelectLabel}
+                    >
+                      Combustión
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
+
+                <Animated.View style={{ transform: [{ scale: scaleElec }], flex: 1 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => setPropulsion("electric")}
+                    style={[
+                      styles.selectionCard,
+                      propulsion === "electric" && styles.selectionCardActive,
+                    ]}
+                  >
+                    <Ionicons
+                      name="flash"
+                      size={36}
+                      color={propulsion === "electric" ? Colors.primary500 : Colors.gray500}
+                    />
+                    <Text
+                      variant="body"
+                      color={propulsion === "electric" ? "primary500" : "gray800"}
+                      weight="600"
+                      style={styles.cardSelectLabel}
+                    >
+                      Eléctrico
+                    </Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              </View>
+
+              <Button
+                title="Siguiente"
+                onPress={handleNextStep}
+                style={styles.nextButton}
+              />
+            </View>
+          )}
+
+          {/* STEP 2: IDENTIFICATION */}
+          {step === 2 && (
+            <View style={styles.formContainer}>
+              <Text variant="heading1" color="gray900" weight="700" style={styles.stepTitle}>
+                Información Básica 📝
+              </Text>
+              <Text variant="body" color="gray500" style={styles.stepSubtitle}>
+                Cuéntanos sobre la marca y modelo de tu máquina.
+              </Text>
+
+              <View style={styles.formFieldsCard}>
+                <Select
+                  label="Marca *"
+                  placeholder="Seleccionar marca"
+                  value={brand}
+                  options={vehicleType === "car" ? CAR_BRANDS : MOTO_BRANDS}
+                  onSelect={setBrand}
+                  error={brandError}
+                />
+
+                <Input
+                  label="Modelo *"
+                  placeholder="Ej: Corolla, Onix, Crypton..."
+                  value={model}
+                  onChangeText={setModel}
+                  error={modelError}
+                />
+
+                <View style={styles.rowInputs}>
+                  <View style={{ flex: 1, marginRight: Spacing.sm }}>
+                    <Input
+                      label="Año *"
+                      placeholder="Ej: 2022"
+                      value={year}
+                      onChangeText={setYear}
+                      keyboardType="numeric"
+                      error={yearError}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Input
+                      label={vehicleType === "moto" && propulsion === "electric" ? "Placa (Opcional)" : "Placa *"}
+                      placeholder={vehicleType === "car" ? "ABC123" : "ABC12A"}
+                      value={plate}
+                      onChangeText={(text) => setPlate(formatPlate(text, vehicleType))}
+                      autoCapitalize="characters"
+                      error={plateError}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <Button
+                title="Siguiente"
+                onPress={handleNextStep}
+                style={styles.nextButton}
+              />
+            </View>
+          )}
+
+          {/* STEP 3: TECHNICAL DETAILS */}
+          {step === 3 && (
+            <View style={styles.formContainer}>
+              <Text variant="heading1" color="gray900" weight="700" style={styles.stepTitle}>
+                Detalles Técnicos ⚙️
+              </Text>
+              <Text variant="body" color="gray500" style={styles.stepSubtitle}>
+                Especifica el tipo de energía que usa y su kilometraje actual.
+              </Text>
+
+              <View style={styles.formFieldsCard}>
+                {propulsion === "combustion" && (
+                  <>
+                    <Select
+                      label="Tipo de Combustible *"
+                      placeholder="Seleccionar tipo de combustible"
+                      value={fuelType}
+                      options={FUEL_TYPES}
+                      onSelect={(val) => {
+                        setFuelType(val);
+                        if (val === "diesel") {
+                          setGasolineSubtype("");
+                        } else {
+                          setGasolineSubtype("corriente");
+                        }
+                      }}
+                    />
+
+                    {fuelType === "gasoline" && (
+                      <Select
+                        label="Subtipo de Gasolina *"
+                        placeholder="Seleccionar subtipo de gasolina"
+                        value={gasolineSubtype}
+                        options={GASOLINE_SUBTYPES}
+                        onSelect={setGasolineSubtype}
+                      />
+                    )}
+                  </>
+                )}
+
+                <Input
+                  label="Kilometraje Inicial *"
+                  placeholder="Ej: 15400"
+                  value={odometer}
+                  onChangeText={setOdometer}
+                  keyboardType="numeric"
+                  error={odometerError}
+                />
+
+                {propulsion === "electric" && (
+                  <Input
+                    label="Capacidad de Batería (kWh) *"
+                    placeholder="Ej: 40"
+                    value={batteryCapacity}
+                    onChangeText={setBatteryCapacity}
+                    keyboardType="numeric"
+                    error={batteryCapacityError}
+                  />
+                )}
+              </View>
+
+              <Button
+                title="Siguiente"
+                onPress={handleNextStep}
+                style={styles.nextButton}
+              />
+            </View>
+          )}
+
+          {/* STEP 4: CAROUSEL & COLORS */}
+          {step === 4 && (
+            <View style={styles.formContainer}>
+              <Text variant="heading1" color="gray900" weight="700" style={styles.stepTitle}>
+                Personaliza tu Vehículo 🎨
+              </Text>
+              <Text variant="body" color="gray500" style={styles.stepSubtitle}>
+                Selecciona la silueta y el color que más se parezca a tu máquina real.
+              </Text>
+
+              <View style={styles.carouselWrapper}>
+                <FlatList
+                  data={VEHICLE_MODELS}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  snapToInterval={width * 0.8 + Spacing.md}
+                  decelerationRate="fast"
+                  contentContainerStyle={styles.carouselContainer}
+                  keyExtractor={item => item.id}
+                  renderItem={({ item }) => {
+                    const isSelected = selectedModelId === item.id;
+                    const currentColor = isSelected ? selectedColor : item.colors[0];
+                    const imageKey = `${item.id}_${currentColor}.webp`;
+
+                    return (
+                      <TouchableOpacity
+                        style={[styles.carouselItem, isSelected && styles.carouselItemSelected]}
+                        onPress={() => {
+                          setSelectedModelId(item.id);
+                          if (!item.colors.includes(selectedColor)) {
+                            setSelectedColor(item.colors[0]);
+                          }
+                        }}
+                        activeOpacity={0.9}
+                      >
+                        <View style={styles.carouselImageContainer}>
+                          <Image source={VEHICLE_IMAGES[imageKey]} style={styles.carouselImage} />
+                        </View>
+                        <Text variant="heading2" color={isSelected ? "primary500" : "gray700"} weight={isSelected ? "700" : "600"} align="center" style={styles.carouselModelName}>
+                          {item.name}
+                        </Text>
+                        
+                        <View style={styles.colorDotsContainer}>
+                          {item.colors.map(color => (
+                            <TouchableOpacity
+                              key={color}
+                              style={[
+                                styles.colorDot,
+                                { backgroundColor: CAR_COLORS[color] },
+                                (isSelected && selectedColor === color) && styles.colorDotSelected
+                              ]}
+                              onPress={() => {
+                                setSelectedModelId(item.id);
+                                setSelectedColor(color);
+                              }}
+                            />
+                          ))}
+                        </View>
+                        
+                        {isSelected && (
+                          <View style={styles.checkBadge}>
+                            <Ionicons name="checkmark-circle" size={24} color={Colors.primary500} />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              </View>
+
+              <Button
+                title="Completar Registro"
+                onPress={handleCreate}
+                loading={loading}
+                style={styles.submitButton}
+              />
+            </View>
+          )}
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -502,7 +681,7 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  header: {
+  topHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -517,79 +696,143 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: "center",
   },
+  indicatorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  indicatorDot: {
+    width: 24,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.gray200,
+  },
+  indicatorDotActive: {
+    backgroundColor: Colors.primary500,
+  },
   scrollContainer: {
     paddingHorizontal: Layout.screenPadding,
     paddingVertical: Layout.verticalRhythm,
-    gap: Spacing.sm,
   },
-  selectorGroup: {
-    marginBottom: Spacing.md,
+  formContainer: {
+    flex: 1,
+  },
+  stepTitle: {
+    marginBottom: Spacing.xs,
+  },
+  stepSubtitle: {
+    marginBottom: Spacing.xl,
+    lineHeight: 22,
   },
   selectorLabel: {
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
     marginLeft: 4,
-    fontWeight: "500",
   },
-  segmentedControl: {
-    height: 52,
+  cardRow: {
     flexDirection: "row",
-    backgroundColor: Colors.gray100,
-    borderRadius: Radius.sm, // matches input border radius (14)
-    padding: 4,
-  },
-  segmentOption: {
-    flex: 1,
-    height: "100%",
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  segmentOptionActive: {
-    backgroundColor: Colors.primary500,
-  },
-  submitButton: {
-    marginTop: Spacing.md,
+    gap: Spacing.md,
     marginBottom: Spacing.xl,
   },
-  selectorSubtitle: {
-    fontSize: 12,
-    color: Colors.gray500,
-    marginLeft: 4,
-    marginBottom: Spacing.xs,
-  },
-  silhouetteGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  silhouetteCard: {
-    width: (width - Layout.screenPadding * 2 - Spacing.md) / 2,
+  selectionCard: {
     backgroundColor: Colors.white,
-    borderRadius: Radius.sm,
-    borderWidth: 1.5,
-    borderColor: Colors.gray200,
-    padding: Spacing.sm,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
     alignItems: "center",
-    position: "relative",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: Colors.gray200,
+    ...Shadows.sm,
+    height: 120,
   },
-  silhouetteCardSelected: {
+  selectionCardActive: {
+    borderColor: Colors.primary500,
+    backgroundColor: "rgba(77, 77, 255, 0.03)",
+  },
+  cardSelectLabel: {
+    marginTop: Spacing.sm,
+  },
+  formFieldsCard: {
+    backgroundColor: Colors.white,
+    padding: Spacing.lg,
+    borderRadius: Radius.lg,
+    ...Shadows.sm,
+    borderWidth: 1,
+    borderColor: Colors.gray100,
+    marginBottom: Spacing.xl,
+  },
+  rowInputs: {
+    flexDirection: "row",
+  },
+  nextButton: {
+    marginTop: "auto",
+  },
+  submitButton: {
+    marginTop: Spacing.xl,
+  },
+  carouselWrapper: {
+    marginHorizontal: -Layout.screenPadding,
+  },
+  carouselContainer: {
+    paddingHorizontal: Layout.screenPadding,
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  carouselItem: {
+    width: width * 0.8,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    paddingVertical: Spacing.xl,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: Colors.gray200,
+    ...Shadows.md,
+    position: "relative",
+    minHeight: 280,
+  },
+  carouselItemSelected: {
     borderColor: Colors.primary500,
     backgroundColor: "rgba(77, 77, 255, 0.02)",
   },
-  silhouetteImg: {
+  carouselImageContainer: {
     width: "100%",
-    height: 70,
+    height: 180,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  carouselImage: {
+    width: "100%",
+    height: "100%",
     resizeMode: "contain",
   },
-  silhouetteName: {
+  carouselModelName: {
+    marginBottom: Spacing.md,
+  },
+  colorDotsContainer: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    justifyContent: "center",
+    flexWrap: "wrap",
     marginTop: Spacing.xs,
+  },
+  colorDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: Colors.gray800,
+    ...Shadows.sm,
+  },
+  colorDotSelected: {
+    borderColor: Colors.primary500,
+    transform: [{ scale: 1.25 }],
   },
   checkBadge: {
     position: "absolute",
-    top: 6,
-    right: 6,
+    top: 16,
+    left: 16,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
   },
 });

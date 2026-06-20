@@ -5,26 +5,25 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
-import { useAlert } from "@/context/AlertContext";
 import { useFocusEffect, useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Text } from "@/components/Typography";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
-import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
+import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { VEHICLE_IMAGES } from "@/constants/vehicles";
 
 export default function VehiclesScreen() {
   const { user } = useAuth();
-  const { showAlert } = useAlert();
   const router = useRouter();
 
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const fetchVehicles = useCallback(async () => {
     if (!user) return;
@@ -36,7 +35,32 @@ export default function VehiclesScreen() {
         .order("created_at", { ascending: false });
 
       if (!error && data) {
-        setVehicles(data);
+        // Calcular el odómetro actual basado en los registros más recientes
+        const vehiclesWithOdo = await Promise.all(
+          data.map(async (v) => {
+            const [fuelRes, chargeRes, maintRes] = await Promise.all([
+              supabase.from("fuel_logs").select("odometer").eq("vehicle_id", v.id).order("date", { ascending: false }).limit(1),
+              supabase.from("electric_charge_logs").select("odometer").eq("vehicle_id", v.id).order("date", { ascending: false }).limit(1),
+              supabase.from("maintenance_logs").select("odometer").eq("vehicle_id", v.id).order("date", { ascending: false }).limit(1),
+            ]);
+
+            let maxOdo = parseFloat(v.initial_odometer || 0);
+
+            const checkOdo = (res: any) => {
+              if (res.data && res.data.length > 0 && res.data[0].odometer) {
+                const odo = parseFloat(res.data[0].odometer);
+                if (!isNaN(odo) && odo > maxOdo) maxOdo = odo;
+              }
+            };
+
+            checkOdo(fuelRes);
+            checkOdo(chargeRes);
+            checkOdo(maintRes);
+
+            return { ...v, calculated_current_odometer: maxOdo };
+          })
+        );
+        setVehicles(vehiclesWithOdo);
       }
     } catch {
       // Errores silenciados
@@ -45,42 +69,11 @@ export default function VehiclesScreen() {
     }
   }, [user]);
 
-  // Carga periódica al enfocar la pestaña
   useFocusEffect(
     useCallback(() => {
       fetchVehicles();
     }, [fetchVehicles])
   );
-
-  const handleActivateVehicle = async (vehicleId: string) => {
-    if (!user || updatingId) return;
-
-    setUpdatingId(vehicleId);
-    try {
-      // 1. Desactivar todos los vehículos
-      await supabase
-        .from("vehicles")
-        .update({ is_active: false })
-        .eq("user_id", user.id);
-
-      // 2. Activar el vehículo seleccionado
-      const { error } = await supabase
-        .from("vehicles")
-        .update({ is_active: true })
-        .eq("id", vehicleId);
-
-      if (error) {
-        showAlert("Error", "No se pudo cambiar el vehículo activo", [], "error");
-      } else {
-        showAlert("Vehículo Seleccionado", "Has cambiado el vehículo activo con éxito.", [], "success");
-        await fetchVehicles();
-      }
-    } catch {
-      showAlert("Error", "Ocurrió un error inesperado", [], "error");
-    } finally {
-      setUpdatingId(null);
-    }
-  };
 
   if (loading) {
     return (
@@ -96,17 +89,26 @@ export default function VehiclesScreen() {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
-          <Text variant="heading1" color="gray900" weight="700">
-            Mis Vehículos
-          </Text>
-          <Text variant="caption" color="gray500">
-            Selecciona o gestiona tu flota de vehículos
-          </Text>
+          <View>
+            <Text variant="heading1" color="gray900" weight="700">
+              Mis Vehículos
+            </Text>
+            <Text variant="caption" color="gray500">
+              Selecciona o gestiona tu flota de vehículos
+            </Text>
+          </View>
+          {vehicles.length > 0 && (
+            <TouchableOpacity 
+              style={styles.headerAddButton}
+              onPress={() => router.push("/vehicle-new")}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={24} color={Colors.white} />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* List Section */}
         {vehicles.length > 0 ? (
           <View style={styles.listSection}>
             {vehicles.map((vehicle) => (
@@ -116,68 +118,56 @@ export default function VehiclesScreen() {
                     <Text variant="heading2" color="gray900" weight="700">
                       {vehicle.custom_brand} {vehicle.custom_model}
                     </Text>
-                    <Text variant="caption" color="gray500" style={styles.plateText}>
-                      Placa: {vehicle.plate || "Sin Placa"} • Año: {vehicle.year}
+                    <Text variant="body" color="gray600" style={styles.plateText} weight="500">
+                      {vehicle.plate || "Sin Placa"} • Año {vehicle.year}
                     </Text>
-                  </View>
 
-                  {/* Status Badge */}
-                  {vehicle.is_active ? (
-                    <View style={[styles.badge, styles.activeBadge]}>
-                      <Text variant="smallLabel" color="white" weight="600">
-                        Activo
-                      </Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      disabled={updatingId !== null}
-                      onPress={() => handleActivateVehicle(vehicle.id)}
-                      style={[styles.badge, styles.inactiveBadge]}
-                    >
-                      {updatingId === vehicle.id ? (
-                        <ActivityIndicator size="small" color={Colors.primary500} />
-                      ) : (
-                        <Text variant="smallLabel" color="primary500" weight="600">
-                          Activar
+                    <View style={styles.specsContainer}>
+                      <View style={styles.specBadge}>
+                        <Ionicons
+                          name={vehicle.propulsion === "electric" ? "flash" : "water"}
+                          size={14}
+                          color={Colors.primary500}
+                          style={styles.specIcon}
+                        />
+                        <Text variant="caption" color="gray700" weight="600">
+                          {vehicle.propulsion === "electric"
+                            ? "Eléctrico"
+                            : vehicle.fuel_type === "diesel"
+                            ? "Diésel"
+                            : `Gasolina ${
+                                vehicle.gasoline_subtype === "extra" ? "Extra" : "Cte"
+                              }`}
                         </Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
-                </View>
+                      </View>
 
-                <View style={styles.cardDivider} />
-
-                <View style={styles.cardFooter}>
-                  <View style={styles.propulsionRow}>
-                    <Ionicons
-                      name={vehicle.propulsion === "electric" ? "flash-outline" : "water-outline"}
-                      size={16}
-                      color={Colors.primary500}
-                      style={styles.footerIcon}
-                    />
-                    <Text variant="caption" color="gray600" weight="500">
-                      {vehicle.propulsion === "electric"
-                        ? "Eléctrico"
-                        : vehicle.fuel_type === "diesel"
-                        ? "Combustión (Diésel)"
-                        : `Combustión (Gasolina ${
-                            vehicle.gasoline_subtype === "extra" ? "Extra" : "Corriente"
-                          })`}
-                    </Text>
+                      <View style={styles.specBadge}>
+                        <Ionicons name="speedometer" size={14} color={Colors.gray500} style={styles.specIcon} />
+                        <Text variant="caption" color="gray700" weight="600">
+                          {(vehicle.calculated_current_odometer || vehicle.initial_odometer).toLocaleString()} km
+                        </Text>
+                      </View>
+                    </View>
                   </View>
 
-                  <View style={styles.odometerRow}>
-                    <Ionicons name="speedometer-outline" size={16} color={Colors.gray500} style={styles.footerIcon} />
-                    <Text variant="caption" color="gray600" weight="500">
-                      Ini: {vehicle.initial_odometer.toLocaleString()} km
-                    </Text>
+                  {/* 3D Model Image */}
+                  <View style={styles.imageContainer}>
+                    {vehicle.model_image && VEHICLE_IMAGES[vehicle.model_image] ? (
+                      <Image
+                        source={VEHICLE_IMAGES[vehicle.model_image]}
+                        style={styles.vehicleImage}
+                      />
+                    ) : (
+                      <View style={styles.placeholderIcon}>
+                        <Ionicons name="car" size={40} color={Colors.gray300} />
+                      </View>
+                    )}
                   </View>
                 </View>
               </Card>
             ))}
           </View>
         ) : (
-          /* Empty State */
           <Card variant="secondary" style={styles.emptyCard}>
             <View style={styles.emptyIconCircle}>
               <Ionicons name="car-outline" size={32} color={Colors.gray400} />
@@ -196,17 +186,6 @@ export default function VehiclesScreen() {
           </Card>
         )}
 
-        {/* Add Vehicle Button (only if list is not empty, to avoid double button) */}
-        {vehicles.length > 0 && (
-          <View style={styles.addButtonContainer}>
-            <Button
-              title="Registrar Nuevo Vehículo"
-              icon="add-outline"
-              onPress={() => router.push("/vehicle-new")}
-              style={styles.addButton}
-            />
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -229,63 +208,82 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Layout.verticalRhythm,
   },
+  headerAddButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary500,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Shadows.floating,
+  },
   listSection: {
-    gap: Spacing.md,
+    gap: Spacing.lg,
     marginBottom: Layout.verticalRhythm,
   },
   vehicleCard: {
     padding: Spacing.md,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.gray100,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   vehicleInfo: {
     flex: 1,
     paddingRight: Spacing.sm,
   },
   plateText: {
-    marginTop: 2,
+    marginTop: 4,
+    marginBottom: 12,
   },
-  badge: {
-    paddingHorizontal: Spacing.sm,
+  specsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  specBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.gray50,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: Radius.full,
-    minWidth: 64,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  activeBadge: {
-    backgroundColor: Colors.success,
-  },
-  inactiveBadge: {
-    backgroundColor: Colors.gray100,
+    borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: Colors.primary500,
+    borderColor: Colors.gray200,
   },
-  cardDivider: {
-    height: 1,
-    backgroundColor: Colors.gray100,
-    marginVertical: Spacing.md,
-  },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  propulsionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  odometerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  footerIcon: {
+  specIcon: {
     marginRight: 4,
+  },
+  imageContainer: {
+    width: 140,
+    height: 90,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  vehicleImage: {
+    width: 160,
+    height: 110,
+    resizeMode: "contain",
+  },
+  placeholderIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.gray50,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.gray200,
   },
   addButtonContainer: {
     marginTop: Spacing.sm,
