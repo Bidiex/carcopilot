@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { supabase } from "@/lib/supabase";
@@ -18,6 +18,7 @@ import * as Location from "expo-location";
 import { useLastOdometer } from "@/hooks/useLastOdometer";
 import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
+import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,8 +28,12 @@ export default function FuelLogNewScreen() {
   const { user } = useAuth();
   const { showAlert } = useAlert();
 
-  const [activeVehicle, setActiveVehicle] = useState<any>(null);
+  const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [fetchingVehicle, setFetchingVehicle] = useState(true);
+
+  const activeVehicle = vehicles.find(v => v.id === selectedVehicleId) || null;
 
   // Hook for last odometer
   const { data: lastOdo } = useLastOdometer(activeVehicle?.id);
@@ -62,31 +67,26 @@ export default function FuelLogNewScreen() {
 
   useEffect(() => {
     if (user) {
-      const fetchActiveVehicle = async () => {
+      const fetchVehicles = async () => {
         try {
           const { data, error } = await supabase
             .from("vehicles")
             .select("*")
-            .eq("user_id", user.id)
-            .eq("is_active", true)
-            .limit(1)
-            .single();
+            .eq("user_id", user.id);
 
-          if (error || !data) {
-            setActiveVehicle(null);
-          } else {
-            setActiveVehicle(data);
+          if (!error && data && data.length > 0) {
+            setVehicles(data);
+            const initialId = vehicleId || data.find((v: any) => v.is_active)?.id || data[0].id;
+            setSelectedVehicleId(initialId);
           }
-        } catch {
-          setActiveVehicle(null);
         } finally {
           setFetchingVehicle(false);
         }
       };
 
-      fetchActiveVehicle();
+      fetchVehicles();
     }
-  }, [user]);
+  }, [user, vehicleId]);
 
   // Tridente Calculator Handlers
   const handleAmountChange = (val: string) => {
@@ -456,6 +456,18 @@ export default function FuelLogNewScreen() {
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
+          {vehicles.length > 1 && (
+            <Select
+              label="Vehículo"
+              value={selectedVehicleId || ""}
+              options={vehicles.map((v: any) => ({
+                label: `${v.custom_brand} ${v.custom_model} (${v.plate || "Sin Placa"})`,
+                value: v.id
+              }))}
+              onSelect={setSelectedVehicleId}
+            />
+          )}
+
           {/* Segment Selector: Full Tank */}
           <View style={styles.selectorGroup}>
             <Text variant="caption" color="gray600" style={styles.selectorLabel}>

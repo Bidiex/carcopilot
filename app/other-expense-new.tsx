@@ -9,13 +9,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { supabase } from "@/lib/supabase";
 import { getColombiaDateString } from "@/lib/date";
 import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
+import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -25,8 +26,12 @@ export default function OtherExpenseNewScreen() {
   const { user } = useAuth();
   const { showAlert } = useAlert();
 
-  const [activeVehicle, setActiveVehicle] = useState<any>(null);
-  const [fetchingVehicle, setFetchingVehicle] = useState(true);
+  const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [loadingInitial, setLoadingInitial] = useState(true);
+
+  const activeVehicle = vehicles.find(v => v.id === selectedVehicleId) || null;
 
   const [dateStr, setDateStr] = useState(getColombiaDateString());
   const [description, setDescription] = useState("");
@@ -41,31 +46,35 @@ export default function OtherExpenseNewScreen() {
 
   useEffect(() => {
     if (user) {
-      const fetchActiveVehicle = async () => {
+      const fetchVehicles = async () => {
         try {
           const { data, error } = await supabase
             .from("vehicles")
             .select("*")
-            .eq("user_id", user.id)
-            .eq("is_active", true)
-            .limit(1)
-            .single();
+            .eq("user_id", user.id);
 
-          if (error || !data) {
-            setActiveVehicle(null);
+          if (!error && data && data.length > 0) {
+            setVehicles(data);
+            const initialId = vehicleId || data.find((v: any) => v.is_active)?.id || data[0].id;
+            setSelectedVehicleId(initialId);
           } else {
-            setActiveVehicle(data);
+            showAlert(
+              "Vehículo requerido",
+              "Debes tener un vehículo activo para registrar gastos.",
+              [{ text: "Entendido", onPress: () => router.back() }],
+              "warning"
+            );
           }
         } catch {
-          setActiveVehicle(null);
+          showAlert("Error", "No se pudieron cargar tus vehículos.", [], "error");
         } finally {
-          setFetchingVehicle(false);
+          setLoadingInitial(false);
         }
       };
 
-      fetchActiveVehicle();
+      fetchVehicles();
     }
-  }, [user]);
+  }, [user, vehicleId]);
 
   const validate = () => {
     let isValid = true;
@@ -134,7 +143,7 @@ export default function OtherExpenseNewScreen() {
     }
   };
 
-  if (fetchingVehicle) {
+  if (loadingInitial) {
     return (
       <SafeAreaView style={styles.loadingArea}>
         <ActivityIndicator size="large" color={Colors.primary500} />
@@ -187,6 +196,18 @@ export default function OtherExpenseNewScreen() {
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
+          {vehicles.length > 1 && (
+            <Select
+              label="Vehículo"
+              value={selectedVehicleId || ""}
+              options={vehicles.map((v: any) => ({
+                label: `${v.custom_brand} ${v.custom_model} (${v.plate || "Sin Placa"})`,
+                value: v.id
+              }))}
+              onSelect={setSelectedVehicleId}
+            />
+          )}
+
           <Input
             label="Fecha (AAAA-MM-DD) *"
             placeholder="Ej: 2026-06-15"

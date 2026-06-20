@@ -46,6 +46,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white, // Matches "#FFF"
     borderRadius: 20, // Matches borderRadius: 20
     padding: 16, // Matches padding: 16
-    ...Shadows.card, // Applies Card Shadow
+    borderWidth: 1,
+    borderColor: Colors.gray200,
   },
 });

@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useAlert } from "@/context/AlertContext";
 import { supabase } from "@/lib/supabase";
@@ -37,8 +37,12 @@ export default function MaintenanceNewScreen() {
   const { user } = useAuth();
   const { showAlert } = useAlert();
 
+  const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+
+  const activeVehicle = vehicles.find(v => v.id === selectedVehicleId) || null;
   const [loading, setLoading] = useState(false);
-  const [activeVehicle, setActiveVehicle] = useState<any>(null);
 
   const { data: lastOdo } = useLastOdometer(activeVehicle?.id);
 
@@ -55,28 +59,30 @@ export default function MaintenanceNewScreen() {
   const [odometerError, setOdometerError] = useState("");
 
   useEffect(() => {
-    if (user) fetchActiveVehicle();
-  }, [user]);
+    if (user) {
+      const fetchVehicles = async () => {
+        const { data, error } = await supabase
+          .from("vehicles")
+          .select("*")
+          .eq("user_id", user.id);
 
-  const fetchActiveVehicle = async () => {
-    const { data } = await supabase
-      .from("vehicles")
-      .select("*")
-      .eq("user_id", user?.id)
-      .eq("is_active", true)
-      .single();
-      
-    if (data) {
-      setActiveVehicle(data);
-    } else {
-      showAlert(
-        "Vehículo requerido",
-        "Activa un vehículo para registrar mantenimientos.",
-        [{ text: "Volver", onPress: () => router.back() }],
-        "warning"
-      );
+        if (!error && data && data.length > 0) {
+          setVehicles(data);
+          const initialId = vehicleId || data.find((v: any) => v.is_active)?.id || data[0].id;
+          setSelectedVehicleId(initialId);
+        } else {
+          showAlert(
+            "Vehículo requerido",
+            "Debes tener un vehículo activo para registrar mantenimientos.",
+            [{ text: "Entendido", onPress: () => router.back() }],
+            "warning"
+          );
+        }
+      };
+
+      fetchVehicles();
     }
-  };
+  }, [user, vehicleId]);
 
   const validate = () => {
     let isValid = true;
@@ -170,6 +176,18 @@ export default function MaintenanceNewScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          {vehicles.length > 1 && (
+            <Select
+              label="Vehículo"
+              value={selectedVehicleId || ""}
+              options={vehicles.map((v: any) => ({
+                label: `${v.custom_brand} ${v.custom_model} (${v.plate || "Sin Placa"})`,
+                value: v.id
+              }))}
+              onSelect={setSelectedVehicleId}
+            />
+          )}
+
           <Input
             label="Fecha (AAAA-MM-DD) *"
             value={date}
