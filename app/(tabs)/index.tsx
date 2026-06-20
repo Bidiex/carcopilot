@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useAuth } from "@/context/AuthContext";
 import { useFocusEffect, useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
@@ -61,7 +62,7 @@ export default function HomeScreen() {
 
   // New metrics states
   const [monthlyStats, setMonthlyStats] = useState(dashboardCache?.monthlyStats || { total: 0, fuel: 0, maint: 0, tax: 0, other: 0 });
-  const [fuelMetrics, setFuelMetrics] = useState(dashboardCache?.fuelMetrics || { lastDate: null, daysSince: null, minPrice: null, maxPrice: null });
+  const [fuelMetrics, setFuelMetrics] = useState(dashboardCache?.fuelMetrics || { lastDate: null, daysSince: null, minPrice: null, maxPrice: null, avgKmPerDay: null, avgDaysBetweenLogs: null });
   const [soatDays, setSoatDays] = useState<number | null>(dashboardCache?.soatDays ?? null);
   const [chartDataMaster, setChartDataMaster] = useState<any>(dashboardCache?.chartDataMaster || []);
   
@@ -136,6 +137,8 @@ export default function HomeScreen() {
           let daysSince = null;
           let minPrice = null;
           let maxPrice = null;
+          let avgKmPerDay = null;
+          let avgDaysBetweenLogs = null;
 
           if (fuelRes.data && fuelRes.data.length > 0) {
             lastDate = fuelRes.data[0].date;
@@ -148,7 +151,26 @@ export default function HomeScreen() {
               maxPrice = Math.max(...prices);
             }
           }
-          if (isMounted) setFuelMetrics({ lastDate, daysSince, minPrice, maxPrice });
+
+          // Compute new metrics using fuel and charge logs
+          const allFuelAndCharge = [
+            ...(fuelRes.data || []).map(l => ({ date: l.date, odo: parseFloat(l.current_odometer) })),
+            ...(chargeRes.data || []).map(l => ({ date: l.date, odo: parseFloat(l.current_odometer) }))
+          ].filter(l => !isNaN(l.odo) && l.date).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+          if (allFuelAndCharge.length > 1) {
+            const latestLog = allFuelAndCharge[0];
+            const oldestLog = allFuelAndCharge[allFuelAndCharge.length - 1];
+            const totalDays = (new Date(latestLog.date).getTime() - new Date(oldestLog.date).getTime()) / (1000 * 60 * 60 * 24);
+            const totalKm = latestLog.odo - oldestLog.odo;
+
+            if (totalDays > 0) {
+              avgKmPerDay = Math.max(0, totalKm / totalDays);
+              avgDaysBetweenLogs = Math.max(0, totalDays / (allFuelAndCharge.length - 1));
+            }
+          }
+
+          if (isMounted) setFuelMetrics({ lastDate, daysSince, minPrice, maxPrice, avgKmPerDay, avgDaysBetweenLogs });
 
           // SOAT
           let daysSoat = null;
@@ -206,7 +228,7 @@ export default function HomeScreen() {
             vehicles: vhs,
             recentLogs: sliceLogs,
             monthlyStats: stats,
-            fuelMetrics: { lastDate, daysSince, minPrice, maxPrice },
+            fuelMetrics: { lastDate, daysSince, minPrice, maxPrice, avgKmPerDay, avgDaysBetweenLogs },
             soatDays: daysSoat,
             chartDataMaster: masterData,
             profileName: profile?.name || "Conductor",
@@ -276,7 +298,10 @@ export default function HomeScreen() {
   const hasVehicles = vehicles.length > 0;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <StatusBar style="light" backgroundColor={Colors.primary500} />
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
       <VehiclePicker
         visible={pickerVisible}
         onClose={() => setPickerVisible(false)}
@@ -308,7 +333,7 @@ export default function HomeScreen() {
             <QuickActionMenu 
               onAction={handleQuickAction} 
               disabled={!hasVehicles} 
-              propulsionType={actionVehicle?.propulsion} 
+              propulsionType={actionVehicle?.propulsion}
             />
           </View>
         </View>
@@ -351,54 +376,6 @@ export default function HomeScreen() {
                     style={styles.cardCarOverlay}
                   />
                 )}
-              </Card>
-            </View>
-
-            {/* Metrics Section */}
-            <View style={styles.sectionDivider} />
-            <View style={styles.metricsGrid}>
-              <Card variant="secondary" style={styles.metricCard}>
-                <View style={styles.metricHeader}>
-                  <Ionicons name="calendar-outline" size={16} color={Colors.primary500} />
-                  <Text variant="smallLabel" color="gray500" weight="600">ÚLT. TANQUEO</Text>
-                </View>
-                <Text variant="heading3" color="gray900" weight="700" style={{ marginTop: Spacing.xs }}>
-                  {fuelMetrics.daysSince !== null ? `${fuelMetrics.daysSince} días` : "--"}
-                </Text>
-                <Text variant="caption" color="gray500">{fuelMetrics.lastDate || "Sin datos"}</Text>
-              </Card>
-
-              <Card variant="secondary" style={styles.metricCard}>
-                <View style={styles.metricHeader}>
-                  <Ionicons name="document-text-outline" size={16} color={Colors.warning500} />
-                  <Text variant="smallLabel" color="gray500" weight="600">VENCE SOAT</Text>
-                </View>
-                <Text variant="heading3" color={soatDays !== null && soatDays < 30 ? "danger" : "gray900"} weight="700" style={{ marginTop: Spacing.xs }}>
-                  {soatDays !== null ? `${soatDays} días` : "--"}
-                </Text>
-                <Text variant="caption" color="gray500">
-                  {soatDays !== null && soatDays < 0 ? "¡Vencido!" : "Restantes"}
-                </Text>
-              </Card>
-            </View>
-
-            <View style={styles.metricsGrid}>
-              <Card variant="secondary" style={[styles.metricCard, { flex: 1 }]}>
-                <View style={styles.metricHeader}>
-                  <Ionicons name="pricetag-outline" size={16} color={Colors.success500} />
-                  <Text variant="smallLabel" color="gray500" weight="600">PRECIO GALÓN HISTÓRICO</Text>
-                </View>
-                <View style={styles.priceRow}>
-                  <View>
-                    <Text variant="caption" color="gray500">Mínimo</Text>
-                    <Text variant="body" color="gray900" weight="700">{fuelMetrics.minPrice ? formatCOP(fuelMetrics.minPrice) : "--"}</Text>
-                  </View>
-                  <View style={styles.priceDivider} />
-                  <View>
-                    <Text variant="caption" color="gray500">Máximo</Text>
-                    <Text variant="body" color="gray900" weight="700">{fuelMetrics.maxPrice ? formatCOP(fuelMetrics.maxPrice) : "--"}</Text>
-                  </View>
-                </View>
               </Card>
             </View>
 
@@ -461,6 +438,76 @@ export default function HomeScreen() {
                     <Text variant="body" color="gray500">No hay datos para mostrar la gráfica.</Text>
                   </View>
                 )}
+              </Card>
+            </View>
+
+            {/* Metrics Section */}
+            <View style={styles.sectionDivider} />
+            <View style={styles.metricsGrid}>
+              <Card variant="secondary" style={styles.metricCard}>
+                <View style={styles.metricHeader}>
+                  <Ionicons name="calendar-outline" size={16} color={Colors.primary500} />
+                  <Text variant="smallLabel" color="gray500" weight="600">ÚLT. TANQUEO</Text>
+                </View>
+                <Text variant="heading3" color="gray900" weight="700" style={{ marginTop: Spacing.xs }}>
+                  {fuelMetrics.daysSince !== null ? `${fuelMetrics.daysSince} días` : "--"}
+                </Text>
+                <Text variant="caption" color="gray500">{fuelMetrics.lastDate || "Sin datos"}</Text>
+              </Card>
+
+              <Card variant="secondary" style={styles.metricCard}>
+                <View style={styles.metricHeader}>
+                  <Ionicons name="document-text-outline" size={16} color={Colors.warning500} />
+                  <Text variant="smallLabel" color="gray500" weight="600">VENCE SOAT</Text>
+                </View>
+                <Text variant="heading3" color={soatDays !== null && soatDays < 30 ? "danger" : "gray900"} weight="700" style={{ marginTop: Spacing.xs }}>
+                  {soatDays !== null ? `${soatDays} días` : "--"}
+                </Text>
+                <Text variant="caption" color="gray500">
+                  {soatDays !== null && soatDays < 0 ? "¡Vencido!" : "Restantes"}
+                </Text>
+              </Card>
+            </View>
+
+            <View style={styles.metricsGrid}>
+              <Card variant="secondary" style={styles.metricCard}>
+                <View style={styles.metricHeader}>
+                  <Ionicons name="speedometer-outline" size={16} color={Colors.primary500} />
+                  <Text variant="smallLabel" color="gray500" weight="600">PROM. KM / DÍA</Text>
+                </View>
+                <Text variant="heading3" color="gray900" weight="700" style={{ marginTop: Spacing.xs }}>
+                  {fuelMetrics.avgKmPerDay !== null ? `${fuelMetrics.avgKmPerDay.toFixed(1)} km` : "--"}
+                </Text>
+              </Card>
+
+              <Card variant="secondary" style={styles.metricCard}>
+                <View style={styles.metricHeader}>
+                  <Ionicons name="time-outline" size={16} color={Colors.primary500} />
+                  <Text variant="smallLabel" color="gray500" weight="600">DÍAS E. TANQUEO</Text>
+                </View>
+                <Text variant="heading3" color="gray900" weight="700" style={{ marginTop: Spacing.xs }}>
+                  {fuelMetrics.avgDaysBetweenLogs !== null ? `${fuelMetrics.avgDaysBetweenLogs.toFixed(1)} días` : "--"}
+                </Text>
+              </Card>
+            </View>
+
+            <View style={styles.metricsGrid}>
+              <Card variant="secondary" style={[styles.metricCard, { flex: 1 }]}>
+                <View style={styles.metricHeader}>
+                  <Ionicons name="pricetag-outline" size={16} color={Colors.success500} />
+                  <Text variant="smallLabel" color="gray500" weight="600">PRECIO GALÓN HISTÓRICO</Text>
+                </View>
+                <View style={styles.priceRow}>
+                  <View>
+                    <Text variant="caption" color="gray500">Mínimo</Text>
+                    <Text variant="body" color="gray900" weight="700">{fuelMetrics.minPrice ? formatCOP(fuelMetrics.minPrice) : "--"}</Text>
+                  </View>
+                  <View style={styles.priceDivider} />
+                  <View>
+                    <Text variant="caption" color="gray500">Máximo</Text>
+                    <Text variant="body" color="gray900" weight="700">{fuelMetrics.maxPrice ? formatCOP(fuelMetrics.maxPrice) : "--"}</Text>
+                  </View>
+                </View>
               </Card>
             </View>
 
@@ -539,11 +586,13 @@ export default function HomeScreen() {
           </Card>
         )}
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.primary500 },
   safeArea: { flex: 1, backgroundColor: Colors.gray50 },
   loadingArea: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.gray50 },
   scrollContainer: { paddingHorizontal: Layout.screenPadding, paddingTop: Spacing.md, paddingBottom: Spacing.xxl },

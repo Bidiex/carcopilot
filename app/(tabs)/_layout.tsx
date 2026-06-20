@@ -2,8 +2,11 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/theme";
 import { Platform } from "react-native";
+import { useStartupRecalculation } from "@/hooks/useStartupRecalculation";
 
 export default function TabLayout() {
+  useStartupRecalculation();
+
   return (
     <Tabs
       screenOptions={{

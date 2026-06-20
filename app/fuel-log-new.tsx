@@ -22,6 +22,9 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
+import { checkChronologyBreak } from "@/lib/chronology";
+import { recalculateConsumption } from "@/lib/consumption";
 
 export default function FuelLogNewScreen() {
   const router = useRouter();
@@ -64,6 +67,7 @@ export default function FuelLogNewScreen() {
   const [gallonsError, setGallonsError] = useState("");
   const [amountError, setAmountError] = useState("");
   const [priceError, setPriceError] = useState("");
+  const [showChronologyModal, setShowChronologyModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -249,81 +253,18 @@ export default function FuelLogNewScreen() {
     return isValid;
   };
 
-  const handleCreate = async () => {
+  const executeCreate = async () => {
     if (!user || !activeVehicle) return;
-    if (!validate()) return;
-
+    
     const currentOdo = parseFloat(odometer);
     const currentGal = parseFloat(gallons);
     const currentAmount = parseFloat(amount);
     const currentPrice = parseFloat(pricePerGallon);
 
     setLoading(true);
+    setShowChronologyModal(false);
 
     try {
-      // 1. Validar que el odómetro sea mayor que el inicial del vehículo
-      if (currentOdo <= activeVehicle.initial_odometer) {
-        setOdometerError(
-          `Debe ser mayor al odómetro inicial del vehículo (${activeVehicle.initial_odometer} km)`
-        );
-        setLoading(false);
-        return;
-      }
-
-      // 2. Validar que el odómetro sea mayor que el último registro de combustible
-      const { data: previousLogs } = await supabase
-        .from("fuel_logs")
-        .select("odometer")
-        .eq("vehicle_id", activeVehicle.id)
-        .order("odometer", { ascending: false })
-        .limit(1);
-
-      if (previousLogs && previousLogs.length > 0) {
-        const latestOdo = parseFloat(previousLogs[0].odometer);
-        if (currentOdo <= latestOdo) {
-          setOdometerError(
-            `Debe ser mayor al odómetro del último tanqueo (${latestOdo} km)`
-          );
-          setLoading(false);
-          return;
-        }
-      }
-
-      let calculatedConsumption = null;
-
-      // 3. Si marca Tanque Lleno, calcular consumo (tanque lleno a tanque lleno)
-      if (fullTank) {
-        // Obtener el último tanque lleno
-        const { data: lastFullLogs } = await supabase
-          .from("fuel_logs")
-          .select("odometer")
-          .eq("vehicle_id", activeVehicle.id)
-          .eq("full_tank", true)
-          .order("odometer", { ascending: false })
-          .limit(1);
-
-        let baselineOdo = activeVehicle.initial_odometer;
-        let query = supabase
-          .from("fuel_logs")
-          .select("gallons")
-          .eq("vehicle_id", activeVehicle.id);
-
-        if (lastFullLogs && lastFullLogs.length > 0) {
-          baselineOdo = parseFloat(lastFullLogs[0].odometer);
-          query = query.gt("odometer", baselineOdo);
-        }
-
-        const { data: partialLogs } = await query;
-        const partialGals =
-          partialLogs?.reduce((acc, log) => acc + parseFloat(log.gallons), 0) || 0;
-
-        const totalGals = currentGal + partialGals;
-        const totalKm = currentOdo - baselineOdo;
-
-        if (totalGals > 0) {
-          calculatedConsumption = totalKm / totalGals;
-        }
-      }
 
       // 4. Estación de Servicio - Deduplicación y Guardado
       let stationId = null;
@@ -372,7 +313,7 @@ export default function FuelLogNewScreen() {
         gallons: currentGal,
         amount_cop: currentAmount,
         full_tank: fullTank,
-        consumption_km_gal: calculatedConsumption,
+        consumption_km_gal: null, // Provisional, se recalculará asíncronamente
         price_per_gallon: currentPrice,
         station_id: stationId,
       });
@@ -380,11 +321,12 @@ export default function FuelLogNewScreen() {
       if (error) {
         showAlert("Error de Tanqueo", error.message, [], "error");
       } else {
+        // Ejecutar recálculo en background sin bloquear
+        recalculateConsumption(activeVehicle.id);
+
         showAlert(
           "Tanqueo Registrado",
-          calculatedConsumption
-            ? `¡Carga exitosa! Consumo calculado: ${calculatedConsumption.toFixed(2)} km/gal`
-            : "¡Carga parcial registrada con éxito!",
+          "¡Carga guardada exitosamente! El consumo se actualizará automáticamente.",
           [
             {
               text: "Entendido",
@@ -401,6 +343,23 @@ export default function FuelLogNewScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCreate = async () => {
+    if (!user || !activeVehicle) return;
+    if (!validate()) return;
+    
+    setLoading(true);
+    const currentOdo = parseFloat(odometer);
+    const check = await checkChronologyBreak(activeVehicle.id, dateStr, currentOdo);
+    
+    if (check.breaksChronology) {
+      setLoading(false);
+      setShowChronologyModal(true);
+      return;
+    }
+    
+    await executeCreate();
   };
 
   if (fetchingVehicle) {
@@ -674,6 +633,12 @@ export default function FuelLogNewScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ChronologyWarningModal
+        visible={showChronologyModal}
+        onCancel={() => setShowChronologyModal(false)}
+        onConfirm={executeCreate}
+      />
     </SafeAreaView>
   );
 }

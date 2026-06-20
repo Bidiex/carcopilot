@@ -20,6 +20,9 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
+import { checkChronologyBreak } from "@/lib/chronology";
+import { recalculateConsumption } from "@/lib/consumption";
 
 const CHARGE_TYPES = [
   { label: "Carga Lenta (Slow)", value: "slow" },
@@ -54,6 +57,7 @@ export default function ElectricChargeEditScreen() {
   const [amountError, setAmountError] = useState("");
   const [batteryStartError, setBatteryStartError] = useState("");
   const [batteryEndError, setBatteryEndError] = useState("");
+  const [showChronologyModal, setShowChronologyModal] = useState(false);
 
   useEffect(() => {
     if (user && id) {
@@ -169,45 +173,17 @@ export default function ElectricChargeEditScreen() {
     return isValid;
   };
 
-  const handleUpdate = async () => {
+  const executeUpdate = async () => {
     if (!user || !activeVehicle || !id) return;
-    if (!validate()) return;
 
     const currentOdo = parseFloat(odometer);
     const currentKwh = parseFloat(kwhCharged);
     const currentAmount = parseFloat(amount);
 
     setLoading(true);
+    setShowChronologyModal(false);
 
     try {
-      if (currentOdo <= activeVehicle.initial_odometer) {
-        setOdometerError(`Debe ser mayor al odómetro inicial (${activeVehicle.initial_odometer} km)`);
-        setLoading(false);
-        return;
-      }
-
-      // Validar con registros PREVIOS al que estamos editando
-      const { data: previousLogs } = await supabase
-        .from("electric_charge_logs")
-        .select("odometer")
-        .eq("vehicle_id", activeVehicle.id)
-        .lt("odometer", currentOdo)
-        .order("odometer", { ascending: false })
-        .limit(1);
-
-      let baselineOdo = activeVehicle.initial_odometer;
-      if (previousLogs && previousLogs.length > 0) {
-        const latestOdo = parseFloat(previousLogs[0].odometer);
-        if (currentOdo <= latestOdo && latestOdo !== parseFloat(odometer)) {
-          setOdometerError(`Debe ser mayor al odómetro anterior (${latestOdo} km)`);
-          setLoading(false);
-          return;
-        }
-        baselineOdo = latestOdo;
-      }
-
-      const totalKm = currentOdo - baselineOdo;
-      const calculatedConsumption = totalKm / currentKwh;
 
       const { error } = await supabase
         .from("electric_charge_logs")
@@ -219,7 +195,7 @@ export default function ElectricChargeEditScreen() {
           battery_pct_start: batteryPctStart ? parseInt(batteryPctStart) : null,
           battery_pct_end: batteryPctEnd ? parseInt(batteryPctEnd) : null,
           charge_type: chargeType,
-          consumption_km_kwh: calculatedConsumption,
+          consumption_km_kwh: null,
         })
         .eq("id", id)
         .eq("user_id", user.id);
@@ -227,6 +203,7 @@ export default function ElectricChargeEditScreen() {
       if (error) {
         showAlert("Error de Actualización", error.message, [], "error");
       } else {
+        recalculateConsumption(activeVehicle.id);
         showAlert(
           "Actualización Exitosa",
           "El registro de carga ha sido modificado.",
@@ -239,6 +216,23 @@ export default function ElectricChargeEditScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUpdate = async () => {
+    if (!user || !activeVehicle || !id) return;
+    if (!validate()) return;
+
+    setLoading(true);
+    const currentOdo = parseFloat(odometer);
+    const check = await checkChronologyBreak(activeVehicle.id, dateStr, currentOdo, id as string);
+    
+    if (check.breaksChronology) {
+      setLoading(false);
+      setShowChronologyModal(true);
+      return;
+    }
+    
+    await executeUpdate();
   };
 
   const handleDelete = () => {
@@ -261,6 +255,7 @@ export default function ElectricChargeEditScreen() {
 
               if (error) throw error;
 
+              recalculateConsumption(activeVehicle.id);
               router.back();
             } catch {
               showAlert("Error", "No se pudo eliminar el registro", [], "error");
@@ -388,6 +383,12 @@ export default function ElectricChargeEditScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ChronologyWarningModal
+        visible={showChronologyModal}
+        onCancel={() => setShowChronologyModal(false)}
+        onConfirm={executeUpdate}
+      />
     </SafeAreaView>
   );
 }

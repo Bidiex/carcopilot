@@ -20,6 +20,8 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
+import { checkChronologyBreak } from "@/lib/chronology";
 
 const MAINTENANCE_TYPES = [
   { label: "Cambio de Aceite", value: "Aceite" },
@@ -57,6 +59,7 @@ export default function MaintenanceNewScreen() {
   const [descError, setDescError] = useState("");
   const [amountError, setAmountError] = useState("");
   const [odometerError, setOdometerError] = useState("");
+  const [showChronologyModal, setShowChronologyModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -125,11 +128,11 @@ export default function MaintenanceNewScreen() {
     return isValid;
   };
 
-  const handleCreate = async () => {
+  const executeCreate = async () => {
     if (!user || !activeVehicle) return;
-    if (!validate()) return;
 
     setLoading(true);
+    setShowChronologyModal(false);
 
     try {
       const { error } = await supabase.from("maintenance_logs").insert({
@@ -157,6 +160,23 @@ export default function MaintenanceNewScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCreate = async () => {
+    if (!user || !activeVehicle) return;
+    if (!validate()) return;
+
+    setLoading(true);
+    const currentOdo = parseFloat(odometer);
+    const check = await checkChronologyBreak(activeVehicle.id, date, currentOdo);
+    
+    if (check.breaksChronology) {
+      setLoading(false);
+      setShowChronologyModal(true);
+      return;
+    }
+    
+    await executeCreate();
   };
 
   return (
@@ -248,6 +268,12 @@ export default function MaintenanceNewScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ChronologyWarningModal
+        visible={showChronologyModal}
+        onCancel={() => setShowChronologyModal(false)}
+        onConfirm={executeCreate}
+      />
     </SafeAreaView>
   );
 }

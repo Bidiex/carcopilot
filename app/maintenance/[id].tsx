@@ -20,6 +20,8 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
+import { checkChronologyBreak } from "@/lib/chronology";
 
 const MAINTENANCE_TYPES = [
   { label: "Cambio de Aceite", value: "Aceite" },
@@ -55,6 +57,7 @@ export default function MaintenanceEditScreen() {
   const [descError, setDescError] = useState("");
   const [amountError, setAmountError] = useState("");
   const [odometerError, setOdometerError] = useState("");
+  const [showChronologyModal, setShowChronologyModal] = useState(false);
 
   useEffect(() => {
     if (user && id) {
@@ -143,11 +146,11 @@ export default function MaintenanceEditScreen() {
     return isValid;
   };
 
-  const handleUpdate = async () => {
+  const executeUpdate = async () => {
     if (!user || !id) return;
-    if (!validate()) return;
 
     setLoading(true);
+    setShowChronologyModal(false);
 
     try {
       const { error } = await supabase
@@ -177,6 +180,23 @@ export default function MaintenanceEditScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUpdate = async () => {
+    if (!user || !id) return;
+    if (!validate()) return;
+
+    setLoading(true);
+    const currentOdo = parseFloat(odometer);
+    const check = await checkChronologyBreak(activeVehicle?.id, date, currentOdo, id as string);
+    
+    if (check.breaksChronology) {
+      setLoading(false);
+      setShowChronologyModal(true);
+      return;
+    }
+    
+    await executeUpdate();
   };
 
   const handleDelete = () => {
@@ -299,6 +319,12 @@ export default function MaintenanceEditScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ChronologyWarningModal
+        visible={showChronologyModal}
+        onCancel={() => setShowChronologyModal(false)}
+        onConfirm={executeUpdate}
+      />
     </SafeAreaView>
   );
 }

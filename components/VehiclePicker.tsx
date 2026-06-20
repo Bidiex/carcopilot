@@ -171,6 +171,7 @@ interface VehiclePickerPillProps {
   selectedId: string | null;
   onPress: () => void;
   showAll?: boolean;
+  variant?: "default" | "light";
 }
 
 export const VehiclePickerPill: React.FC<VehiclePickerPillProps> = ({
@@ -178,6 +179,7 @@ export const VehiclePickerPill: React.FC<VehiclePickerPillProps> = ({
   selectedId,
   onPress,
   showAll = true,
+  variant = "default",
 }) => {
   const selected = vehicles.find((v) => v.id === selectedId);
   const label =
@@ -189,18 +191,23 @@ export const VehiclePickerPill: React.FC<VehiclePickerPillProps> = ({
         : "Vehículo"
       : selected?.plate || selected?.custom_model || "Vehículo";
 
+  const isLight = variant === "light";
+
   return (
-    <TouchableOpacity style={styles.pill} onPress={onPress}>
-      <Ionicons name="car-outline" size={15} color={Colors.primary500} />
+    <TouchableOpacity 
+      style={[styles.pill, isLight && { backgroundColor: "rgba(255,255,255,0.2)" }]} 
+      onPress={onPress}
+    >
+      <Ionicons name="car-outline" size={15} color={isLight ? Colors.white : Colors.primary500} />
       <Text
         variant="smallLabel"
-        color="primary500"
+        color={isLight ? "white" : "primary500"}
         weight="600"
         style={styles.pillText}
       >
         {label}
       </Text>
-      <Ionicons name="chevron-down" size={14} color={Colors.primary500} />
+      <Ionicons name="chevron-down" size={14} color={isLight ? Colors.white : Colors.primary500} />
     </TouchableOpacity>
   );
 };

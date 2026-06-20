@@ -21,6 +21,9 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
+import { checkChronologyBreak } from "@/lib/chronology";
+import { recalculateConsumption } from "@/lib/consumption";
 
 const CHARGE_TYPES = [
   { label: "Carga Lenta (Slow)", value: "slow" },
@@ -59,6 +62,7 @@ export default function ElectricChargeNewScreen() {
   const [amountError, setAmountError] = useState("");
   const [batteryStartError, setBatteryStartError] = useState("");
   const [batteryEndError, setBatteryEndError] = useState("");
+  const [showChronologyModal, setShowChronologyModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -151,52 +155,18 @@ export default function ElectricChargeNewScreen() {
     return isValid;
   };
 
-  const handleCreate = async () => {
+  const executeCreate = async () => {
     if (!user || !activeVehicle) return;
-    if (!validate()) return;
 
     const currentOdo = parseFloat(odometer);
     const currentKwh = parseFloat(kwhCharged);
     const currentAmount = parseFloat(amount);
 
     setLoading(true);
+    setShowChronologyModal(false);
 
     try {
-      // 1. Validar que el odómetro sea mayor que el inicial del vehículo
-      if (currentOdo <= activeVehicle.initial_odometer) {
-        setOdometerError(
-          `Debe ser mayor al odómetro inicial del vehículo (${activeVehicle.initial_odometer} km)`
-        );
-        setLoading(false);
-        return;
-      }
 
-      // 2. Validar que el odómetro sea mayor que el último registro de carga
-      const { data: previousLogs } = await supabase
-        .from("electric_charge_logs")
-        .select("odometer")
-        .eq("vehicle_id", activeVehicle.id)
-        .order("odometer", { ascending: false })
-        .limit(1);
-
-      let baselineOdo = activeVehicle.initial_odometer;
-      if (previousLogs && previousLogs.length > 0) {
-        const latestOdo = parseFloat(previousLogs[0].odometer);
-        if (currentOdo <= latestOdo) {
-          setOdometerError(
-            `Debe ser mayor al odómetro de la última carga (${latestOdo} km)`
-          );
-          setLoading(false);
-          return;
-        }
-        baselineOdo = latestOdo;
-      }
-
-      // 3. Calcular consumo de carga (km/kWh)
-      const totalKm = currentOdo - baselineOdo;
-      const calculatedConsumption = totalKm / currentKwh;
-
-      // 4. Insertar en base de datos
       const { error } = await supabase.from("electric_charge_logs").insert({
         vehicle_id: activeVehicle.id,
         user_id: user.id,
@@ -207,15 +177,16 @@ export default function ElectricChargeNewScreen() {
         battery_pct_start: batteryPctStart ? parseInt(batteryPctStart) : null,
         battery_pct_end: batteryPctEnd ? parseInt(batteryPctEnd) : null,
         charge_type: chargeType,
-        consumption_km_kwh: calculatedConsumption,
+        consumption_km_kwh: null,
       });
 
       if (error) {
         showAlert("Error de Registro", error.message, [], "error");
       } else {
+        recalculateConsumption(activeVehicle.id);
         showAlert(
           "Carga Registrada",
-          `¡Carga guardada! Rendimiento calculado: ${calculatedConsumption.toFixed(2)} km/kWh`,
+          `¡Carga guardada exitosamente! El rendimiento se actualizará automáticamente.`,
           [
             {
               text: "Entendido",
@@ -232,6 +203,23 @@ export default function ElectricChargeNewScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCreate = async () => {
+    if (!user || !activeVehicle) return;
+    if (!validate()) return;
+    
+    setLoading(true);
+    const currentOdo = parseFloat(odometer);
+    const check = await checkChronologyBreak(activeVehicle.id, dateStr, currentOdo);
+    
+    if (check.breaksChronology) {
+      setLoading(false);
+      setShowChronologyModal(true);
+      return;
+    }
+    
+    await executeCreate();
   };
 
   if (fetchingVehicle) {
@@ -383,6 +371,12 @@ export default function ElectricChargeNewScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ChronologyWarningModal
+        visible={showChronologyModal}
+        onCancel={() => setShowChronologyModal(false)}
+        onConfirm={executeCreate}
+      />
     </SafeAreaView>
   );
 }

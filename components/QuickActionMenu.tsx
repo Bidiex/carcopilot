@@ -8,9 +8,15 @@ interface QuickActionMenuProps {
   onAction: (action: "fuel" | "charge" | "maintenance" | "tax" | "other") => void;
   disabled?: boolean;
   propulsionType?: "electric" | "combustion" | "hybrid";
+  variant?: "default" | "light";
 }
 
-export const QuickActionMenu: React.FC<QuickActionMenuProps> = ({ onAction, disabled, propulsionType = "combustion" }) => {
+export const QuickActionMenu: React.FC<QuickActionMenuProps> = ({ 
+  onAction, 
+  disabled, 
+  propulsionType = "combustion",
+  variant = "default" 
+}) => {
   const [visible, setVisible] = useState(false);
 
   const handleAction = (action: "fuel" | "charge" | "maintenance" | "tax" | "other") => {
@@ -19,15 +25,24 @@ export const QuickActionMenu: React.FC<QuickActionMenuProps> = ({ onAction, disa
   };
 
   const isElectric = propulsionType === "electric";
+  const isLight = variant === "light";
 
   return (
     <>
       <TouchableOpacity
-        style={[styles.fabButton, disabled && { opacity: 0.5 }]}
+        style={[
+          styles.fabButton, 
+          isLight && { backgroundColor: Colors.white },
+          disabled && { opacity: 0.5 }
+        ]}
         disabled={disabled}
         onPress={() => setVisible(true)}
       >
-        <Ionicons name="add" size={28} color={Colors.white} />
+        <Ionicons 
+          name="add" 
+          size={28} 
+          color={isLight ? Colors.primary500 : Colors.white} 
+        />
       </TouchableOpacity>
 
       <Modal transparent visible={visible} animationType="fade">
