@@ -97,7 +97,9 @@ export default function AIScreen() {
   }));
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
       <View style={styles.content}>
         <Text variant="display" color="gray900" align="center" style={styles.title}>
           {state === 'idle' ? 'Asistente IA' : state === 'listening' ? 'Escuchando...' : 'Respondiendo...'}
@@ -132,12 +134,17 @@ export default function AIScreen() {
         </View>
 
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: Colors.primary500,
+  },
+  safeArea: {
     flex: 1,
     backgroundColor: Colors.white,
   },

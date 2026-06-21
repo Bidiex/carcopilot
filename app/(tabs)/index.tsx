@@ -9,7 +9,6 @@ import {
   Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import { useAuth } from "@/context/AuthContext";
 import { useFocusEffect, useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
@@ -59,7 +58,7 @@ export default function HomeScreen() {
   const [soatDays, setSoatDays] = useState<number | null>(dashboardCache?.soatDays ?? null);
   const [chartDataMaster, setChartDataMaster] = useState<any>(dashboardCache?.chartDataMaster || []);
   
-  const [chartFilter, setChartFilter] = useState<"total" | "fuel" | "maint" | "tax">("total");
+  const [chartFilter, setChartFilter] = useState<"total" | "fuel" | "maint" | "tax" | "other">("total");
 
   const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId) ?? null;
   const activeVehicle = vehicles.find(v => v.is_active) ?? vehicles[0] ?? null;
@@ -187,14 +186,14 @@ export default function HomeScreen() {
           if (isMounted) setMonthlyStats(stats);
 
           // Chart Data (Last 6 months grouped)
-          const chartMap: { [month: string]: { total: number, fuel: number, maint: number, tax: number } } = {};
+          const chartMap: { [month: string]: { total: number, fuel: number, maint: number, tax: number, other: number } } = {};
           
           const getMonthKey = (d: string) => d.substring(0, 7); // YYYY-MM
           
-          const processLog = (log: any, dateField: string, type: "fuel" | "maint" | "tax") => {
+          const processLog = (log: any, dateField: string, type: "fuel" | "maint" | "tax" | "other") => {
             if (!log[dateField]) return;
             const key = getMonthKey(log[dateField]);
-            if (!chartMap[key]) chartMap[key] = { total: 0, fuel: 0, maint: 0, tax: 0 };
+            if (!chartMap[key]) chartMap[key] = { total: 0, fuel: 0, maint: 0, tax: 0, other: 0 };
             const amt = parseFloat(log.amount_cop);
             chartMap[key][type] += amt;
             chartMap[key].total += amt;
@@ -204,6 +203,7 @@ export default function HomeScreen() {
           chargeRes.data?.forEach(l => processLog(l, "date", "fuel"));
           maintRes.data?.forEach(l => processLog(l, "date", "maint"));
           taxRes.data?.forEach(l => processLog(l, "issue_date", "tax"));
+          otherRes.data?.forEach(l => processLog(l, "date", "other"));
 
           const sortedKeys = Object.keys(chartMap).sort();
           const masterData = sortedKeys.map(k => {
@@ -292,7 +292,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" backgroundColor={Colors.primary500} />
       <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
       <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
       <VehiclePicker
@@ -363,11 +362,28 @@ export default function HomeScreen() {
                   </View>
                 </View>
 
-                {!isAllMode && (selectedVehicle?.model_image || activeVehicle?.model_image) && (
-                  <Image
-                    source={VEHICLE_IMAGES[selectedVehicle?.model_image || activeVehicle?.model_image]}
-                    style={styles.cardCarOverlay}
-                  />
+                {isAllMode ? (
+                  <View style={styles.allVehiclesContainer}>
+                    {vehicles.slice(0, 3).reverse().map((v, i) => v.model_image && (
+                      <Image
+                        key={v.id}
+                        source={VEHICLE_IMAGES[v.model_image]}
+                        style={[styles.allVehiclesImage, { zIndex: i }]}
+                      />
+                    ))}
+                    {vehicles.length > 3 && (
+                      <View style={styles.moreVehiclesBadge}>
+                        <Text variant="caption" color="white" weight="700">+{vehicles.length - 3}</Text>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  (selectedVehicle?.model_image || activeVehicle?.model_image) && (
+                    <Image
+                      source={VEHICLE_IMAGES[selectedVehicle?.model_image || activeVehicle?.model_image]}
+                      style={styles.cardCarOverlay}
+                    />
+                  )
                 )}
               </Card>
             </View>
@@ -384,14 +400,14 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={styles.filtersContainer}>
-                {["total", "fuel", "maint", "tax"].map((filter) => (
+                {["total", "fuel", "maint", "tax", "other"].map((filter) => (
                   <TouchableOpacity
                     key={filter}
                     style={[styles.filterChip, chartFilter === filter && styles.filterChipActive]}
                     onPress={() => setChartFilter(filter as any)}
                   >
                     <Text variant="smallLabel" color={chartFilter === filter ? "white" : "gray600"} weight="600">
-                      {filter === "total" ? "Total" : filter === "fuel" ? "Combustible" : filter === "maint" ? "Talleres" : "Impuestos"}
+                      {filter === "total" ? "Total" : filter === "fuel" ? "Combustible" : filter === "maint" ? "Talleres" : filter === "tax" ? "Impuestos" : "Otros"}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -608,6 +624,30 @@ const styles = StyleSheet.create({
   breakdownRow: { flexDirection: "row", justifyContent: "space-between", marginTop: Spacing.xs, zIndex: 2 },
   breakdownCol: { flex: 1 },
   opacityLabel: { opacity: 0.7, marginBottom: 2 },
+  allVehiclesContainer: {
+    position: "absolute",
+    right: 0,
+    top: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    height: 80,
+  },
+  allVehiclesImage: {
+    width: 90,
+    height: 60,
+    resizeMode: "contain",
+    marginLeft: -40,
+  },
+  moreVehiclesBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: -10,
+    zIndex: 10,
+  },
   
   metricsGrid: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.sm },
   metricCard: { flex: 1, padding: Spacing.md, marginBottom: 0 },

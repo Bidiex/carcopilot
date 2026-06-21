@@ -11,6 +11,9 @@ import {
 } from "@expo-google-fonts/montserrat";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabase";
+import { requestNotificationPermissions } from "@/lib/notifications";
+import { StatusBar } from "expo-status-bar";
+import { Colors } from "@/constants/theme";
 
 function RootNavigator() {
   const { session, isLoading } = useAuth();
@@ -90,6 +93,10 @@ export default function RootLayout() {
     Montserrat_700Bold,
   });
 
+  useEffect(() => {
+    requestNotificationPermissions();
+  }, []);
+
   if (!fontsLoaded) {
     return null;
   }
@@ -97,6 +104,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <AlertProvider>
+        <StatusBar style="light" backgroundColor={Colors.primary500} />
         <RootNavigator />
       </AlertProvider>
     </AuthProvider>

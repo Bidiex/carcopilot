@@ -25,6 +25,7 @@ import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
 import { VEHICLE_MODELS, VEHICLE_IMAGES, CAR_COLORS } from "@/constants/vehicles";
+import { scheduleWelcomeNotification } from "@/lib/notifications";
 
 const { width } = Dimensions.get("window");
 
@@ -359,6 +360,7 @@ export default function OnboardingScreen() {
             {
               text: "Entrar",
               onPress: () => {
+                scheduleWelcomeNotification();
                 router.replace("/(tabs)");
               },
             },
@@ -375,6 +377,7 @@ export default function OnboardingScreen() {
             {
               text: "Entendido",
               onPress: () => {
+                scheduleWelcomeNotification();
                 router.replace("/(auth)/login");
               },
             },

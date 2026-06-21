@@ -23,16 +23,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
 import { checkChronologyBreak } from "@/lib/chronology";
 
-const MAINTENANCE_TYPES = [
-  { label: "Cambio de Aceite", value: "Aceite" },
-  { label: "Frenos", value: "Frenos" },
-  { label: "Llantas", value: "Llantas" },
-  { label: "Correa de Distribución", value: "Correa" },
-  { label: "Batería", value: "Bateria" },
-  { label: "Suspensión", value: "Suspension" },
-  { label: "Mantenimiento General", value: "General" },
-  { label: "Otro", value: "Otro" },
-];
+import { MAINTENANCE_CATEGORIES, getCategoryByItem } from "@/constants/maintenance";
 
 export default function MaintenanceEditScreen() {
   const router = useRouter();
@@ -47,14 +38,15 @@ export default function MaintenanceEditScreen() {
   const { data: lastOdo } = useLastOdometer(activeVehicle?.id, { id: id as string, type: "maintenance" });
 
   const [date, setDate] = useState("");
-  const [type, setType] = useState("");
-  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [item, setItem] = useState("");
+  const [observations, setObservations] = useState("");
   const [amount, setAmount] = useState("");
   const [odometer, setOdometer] = useState("");
 
   const [dateError, setDateError] = useState("");
-  const [typeError, setTypeError] = useState("");
-  const [descError, setDescError] = useState("");
+  const [categoryError, setCategoryError] = useState("");
+  const [itemError, setItemError] = useState("");
   const [amountError, setAmountError] = useState("");
   const [odometerError, setOdometerError] = useState("");
   const [showChronologyModal, setShowChronologyModal] = useState(false);
@@ -88,8 +80,10 @@ export default function MaintenanceEditScreen() {
       if (error || !record) throw error;
 
       setDate(record.date);
-      setType(record.type);
-      setDescription(record.description || "");
+      const cat = getCategoryByItem(record.type);
+      setCategory(cat || "otros");
+      setItem(record.type);
+      setObservations(record.description || "");
       setAmount(record.amount_cop.toString());
       setOdometer(record.odometer.toString());
 
@@ -108,8 +102,8 @@ export default function MaintenanceEditScreen() {
   const validate = () => {
     let isValid = true;
     setDateError("");
-    setTypeError("");
-    setDescError("");
+    setCategoryError("");
+    setItemError("");
     setAmountError("");
     setOdometerError("");
 
@@ -118,13 +112,13 @@ export default function MaintenanceEditScreen() {
       isValid = false;
     }
 
-    if (!type) {
-      setTypeError("Selecciona el tipo de mantenimiento");
+    if (!category) {
+      setCategoryError("Selecciona una categoría");
       isValid = false;
     }
 
-    if (!description.trim()) {
-      setDescError("Agrega una descripción del servicio");
+    if (!item) {
+      setItemError("Selecciona el componente o servicio");
       isValid = false;
     }
 
@@ -157,8 +151,8 @@ export default function MaintenanceEditScreen() {
         .from("maintenance_logs")
         .update({
           date,
-          type,
-          description: description.trim(),
+          type: item,
+          description: observations.trim(),
           amount_cop: parseFloat(amount),
           odometer: parseFloat(odometer),
         })
@@ -268,20 +262,35 @@ export default function MaintenanceEditScreen() {
           />
 
           <Select
-            label="Tipo de Servicio *"
-            placeholder="Seleccionar..."
-            value={type}
-            options={MAINTENANCE_TYPES}
-            onSelect={setType}
-            error={typeError}
+            label="Categoría *"
+            placeholder="Seleccionar categoría..."
+            value={category}
+            options={MAINTENANCE_CATEGORIES.map(c => ({ label: c.name, value: c.id }))}
+            onSelect={(val) => {
+              setCategory(val);
+              setItem("");
+            }}
+            error={categoryError}
+          />
+
+          <Select
+            label="Componente o Servicio *"
+            placeholder="Seleccionar ítem..."
+            value={item}
+            options={
+              category
+                ? MAINTENANCE_CATEGORIES.find(c => c.id === category)?.items.map(i => ({ label: i, value: i })) || []
+                : []
+            }
+            onSelect={setItem}
+            error={itemError}
           />
 
           <Input
-            label="Descripción del trabajo *"
-            placeholder="Ej: Cambio de pastillas delanteras..."
-            value={description}
-            onChangeText={setDescription}
-            error={descError}
+            label="Observaciones (Opcional)"
+            placeholder="Ej: Compradas en taller XYZ..."
+            value={observations}
+            onChangeText={setObservations}
           />
 
           <Input

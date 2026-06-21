@@ -6,6 +6,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Modal,
+  FlatList,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
@@ -16,7 +19,10 @@ import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { VEHICLE_IMAGES } from "@/constants/vehicles";
+import { VEHICLE_IMAGES, VEHICLE_MODELS, CAR_COLORS } from "@/constants/vehicles";
+import { useAlert } from "@/context/AlertContext";
+
+const { width } = Dimensions.get("window");
 
 export default function VehiclesScreen() {
   const { user } = useAuth();
@@ -24,6 +30,13 @@ export default function VehiclesScreen() {
 
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Edit Model State
+  const { showAlert } = useAlert();
+  const [editingVehicle, setEditingVehicle] = useState<any>(null);
+  const [selectedModelId, setSelectedModelId] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
+  const [savingModel, setSavingModel] = useState(false);
 
   const fetchVehicles = useCallback(async () => {
     if (!user) return;
@@ -75,16 +88,62 @@ export default function VehiclesScreen() {
     }, [fetchVehicles])
   );
 
+  const openEditModal = (vehicle: any) => {
+    setEditingVehicle(vehicle);
+    if (vehicle.model_image) {
+      const [modelId, colorExt] = vehicle.model_image.split("_");
+      const color = colorExt ? colorExt.replace(".webp", "") : "";
+      setSelectedModelId(modelId);
+      setSelectedColor(color);
+    } else {
+      setSelectedModelId(VEHICLE_MODELS[0].id);
+      setSelectedColor(VEHICLE_MODELS[0].colors[0]);
+    }
+  };
+
+  const handleSaveModel = async () => {
+    if (!editingVehicle) return;
+    setSavingModel(true);
+    
+    const imageKey = `${selectedModelId}_${selectedColor}.webp`;
+
+    try {
+      const { error } = await supabase
+        .from("vehicles")
+        .update({ model_image: imageKey })
+        .eq("id", editingVehicle.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setVehicles((prev) => 
+        prev.map(v => v.id === editingVehicle.id ? { ...v, model_image: imageKey } : v)
+      );
+
+      showAlert("Vehículo Actualizado", "El modelo ha sido cambiado exitosamente.", [], "success");
+      setEditingVehicle(null);
+    } catch (e: any) {
+      showAlert("Error", "No se pudo actualizar el modelo: " + e.message, [], "error");
+    } finally {
+      setSavingModel(false);
+    }
+  };
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingArea}>
-        <ActivityIndicator size="large" color={Colors.primary500} />
-      </SafeAreaView>
+      <View style={styles.container}>
+        <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+        <SafeAreaView edges={["left", "right", "bottom"]} style={styles.loadingArea}>
+          <ActivityIndicator size="large" color={Colors.primary500} />
+        </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -164,6 +223,12 @@ export default function VehiclesScreen() {
                     )}
                   </View>
                 </View>
+                <TouchableOpacity 
+                  style={styles.editModelButton}
+                  onPress={() => openEditModal(vehicle)}
+                >
+                  <Ionicons name="pencil" size={16} color={Colors.white} />
+                </TouchableOpacity>
               </Card>
             ))}
           </View>
@@ -187,11 +252,102 @@ export default function VehiclesScreen() {
         )}
 
       </ScrollView>
-    </SafeAreaView>
+
+      {/* Edit Model Modal */}
+      <Modal
+        visible={!!editingVehicle}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setEditingVehicle(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text variant="heading2" color="gray900" weight="700">Editar Modelo</Text>
+              <TouchableOpacity onPress={() => setEditingVehicle(null)}>
+                <Ionicons name="close" size={24} color={Colors.gray900} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.carouselWrapper}>
+              <FlatList
+                data={VEHICLE_MODELS}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={width * 0.7 + Spacing.md}
+                decelerationRate="fast"
+                contentContainerStyle={styles.carouselContainer}
+                keyExtractor={item => item.id}
+                renderItem={({ item }) => {
+                  const isSelected = selectedModelId === item.id;
+                  const currentColor = isSelected ? selectedColor : item.colors[0];
+                  const imageKey = `${item.id}_${currentColor}.webp`;
+
+                  return (
+                    <TouchableOpacity
+                      style={[styles.carouselItem, isSelected && styles.carouselItemSelected]}
+                      onPress={() => {
+                        setSelectedModelId(item.id);
+                        if (!item.colors.includes(selectedColor)) {
+                          setSelectedColor(item.colors[0]);
+                        }
+                      }}
+                      activeOpacity={0.9}
+                    >
+                      <View style={styles.carouselImageContainer}>
+                        <Image source={VEHICLE_IMAGES[imageKey]} style={styles.carouselImage} />
+                      </View>
+                      <Text variant="body" color={isSelected ? "primary500" : "gray700"} weight={isSelected ? "700" : "600"} align="center" style={styles.carouselModelName}>
+                        {item.name}
+                      </Text>
+                      
+                      <View style={styles.colorDotsContainer}>
+                        {item.colors.map(color => (
+                          <TouchableOpacity
+                            key={color}
+                            style={[
+                              styles.colorDot,
+                              { backgroundColor: CAR_COLORS[color as keyof typeof CAR_COLORS] },
+                              (isSelected && selectedColor === color) && styles.colorDotSelected
+                            ]}
+                            onPress={() => {
+                              setSelectedModelId(item.id);
+                              setSelectedColor(color);
+                            }}
+                          />
+                        ))}
+                      </View>
+                      
+                      {isSelected && (
+                        <View style={styles.selectedBadge}>
+                          <Ionicons name="checkmark" size={16} color={Colors.white} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
+
+            <Button
+              title={savingModel ? "Guardando..." : "Guardar Cambios"}
+              onPress={handleSaveModel}
+              disabled={savingModel || !selectedModelId}
+              style={styles.saveButton}
+            />
+          </View>
+        </View>
+      </Modal>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.primary500,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: Colors.gray50,
@@ -268,33 +424,37 @@ const styles = StyleSheet.create({
     width: 140,
     height: 90,
     justifyContent: "center",
-    alignItems: "flex-end",
+    alignItems: "center",
+    position: "relative",
   },
   vehicleImage: {
-    width: 160,
-    height: 110,
+    width: "100%",
+    height: "100%",
     resizeMode: "contain",
   },
   placeholderIcon: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: Colors.gray50,
+    backgroundColor: Colors.gray100,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.gray200,
   },
-  addButtonContainer: {
-    marginTop: Spacing.sm,
-  },
-  addButton: {
+  editModelButton: {
+    position: "absolute",
+    right: Spacing.md,
+    top: Spacing.md,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: Colors.primary500,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Shadows.card,
   },
   emptyCard: {
-    padding: 24,
+    padding: Spacing.xxl,
     alignItems: "center",
-    marginVertical: Spacing.xl,
   },
   emptyIconCircle: {
     width: 64,
@@ -309,7 +469,90 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   emptySubtitle: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
     lineHeight: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  carouselWrapper: {
+    marginHorizontal: -Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  carouselContainer: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
+  },
+  carouselItem: {
+    width: width * 0.7,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    borderWidth: 2,
+    borderColor: Colors.gray100,
+    ...Shadows.card,
+    position: "relative",
+  },
+  carouselItemSelected: {
+    borderColor: Colors.primary500,
+    backgroundColor: Colors.primary50,
+  },
+  carouselImageContainer: {
+    height: 120,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+  },
+  carouselImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "contain",
+  },
+  carouselModelName: {
+    marginBottom: Spacing.sm,
+  },
+  colorDotsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: Spacing.xs,
+  },
+  colorDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  colorDotSelected: {
+    borderColor: Colors.gray900,
+  },
+  selectedBadge: {
+    position: "absolute",
+    top: Spacing.sm,
+    right: Spacing.sm,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.primary500,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  saveButton: {
+    width: "100%",
   },
 });

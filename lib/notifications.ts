@@ -4,7 +4,6 @@ import { Platform } from 'react-native';
 // Configurar el manejador para cuando la app está en primer plano
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: true,
@@ -17,6 +16,15 @@ Notifications.setNotificationHandler({
  */
 export async function requestNotificationPermissions() {
   if (Platform.OS === 'web') return false;
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    });
+  }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -100,4 +108,37 @@ export async function cancelDocumentReminders(recordId: string) {
       // Ignorar errores al intentar cancelar notificaciones no existentes
     }
   }
+}
+
+/**
+ * Programa una notificación local para mostrarse en N segundos.
+ */
+export async function scheduleLocalNotification(title: string, body: string, seconds: number = 5) {
+  if (Platform.OS === 'web') return;
+
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) return;
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+      sound: true,
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds,
+    },
+  });
+}
+
+/**
+ * Programa la notificación de bienvenida para el "Copiloto".
+ */
+export async function scheduleWelcomeNotification() {
+  await scheduleLocalNotification(
+    "¡Bienvenido a CarCopilot! 🚗",
+    "Tu garaje digital está listo. Comienza a registrar tus gastos para tomar el control de tus finanzas.",
+    5 // Aparece 5 segundos después
+  );
 }

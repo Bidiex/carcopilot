@@ -7,10 +7,98 @@ import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
+import { useState, useEffect } from "react";
+import { BottomSheet } from "@/components/BottomSheet";
+import { Input } from "@/components/Input";
+import { Switch } from "@/components/Switch";
+import { supabase } from "@/lib/supabase";
+import * as LocalAuthentication from "expo-local-authentication";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function AccountScreen() {
   const { user, signOut } = useAuth();
   const { showAlert } = useAlert();
+
+  const [profileModal, setProfileModal] = useState(false);
+  const [notifModal, setNotifModal] = useState(false);
+  const [securityModal, setSecurityModal] = useState(false);
+
+  const [name, setName] = useState(user?.user_metadata?.name || "");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const [docAlerts, setDocAlerts] = useState(true);
+  const [maintAlerts, setMaintAlerts] = useState(true);
+  const [promoAlerts, setPromoAlerts] = useState(false);
+
+  const [bioEnabled, setBioEnabled] = useState(false);
+  const [hasHardware, setHasHardware] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      setHasHardware(compatible);
+      if (compatible) {
+        const saved = await AsyncStorage.getItem("biometrics_enabled");
+        if (saved === "true") setBioEnabled(true);
+      }
+    })();
+  }, []);
+
+  const handleSaveProfile = async () => {
+    if (!name.trim()) return showAlert("Error", "El nombre no puede estar vacío", [], "error");
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { name: name.trim() }
+      });
+      if (error) throw error;
+      
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .update({ name: name.trim() })
+        .eq('id', user?.id);
+
+      if (profileErr) throw profileErr;
+
+      showAlert("Perfil Actualizado", "Tu nombre ha sido guardado correctamente.", [], "success");
+      setProfileModal(false);
+    } catch (e: any) {
+      showAlert("Error", "No se pudo actualizar el perfil: " + e.message, [], "error");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const toggleBiometrics = async (val: boolean) => {
+    if (val) {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: "Autentícate para habilitar esta función",
+      });
+      if (result.success) {
+        setBioEnabled(true);
+        await AsyncStorage.setItem("biometrics_enabled", "true");
+      }
+    } else {
+      setBioEnabled(false);
+      await AsyncStorage.setItem("biometrics_enabled", "false");
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    showAlert(
+      "Eliminar Cuenta",
+      "Esta acción es irreversible y borrará todos tus vehículos y gastos. ¿Estás seguro?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Eliminar", 
+          style: "destructive", 
+          onPress: () => showAlert("En Progreso", "Para eliminar tu cuenta, contacta a soporte por ahora.", [], "info") 
+        }
+      ],
+      "warning"
+    );
+  };
 
   const handleLogout = () => {
     showAlert(
@@ -35,7 +123,9 @@ export default function AccountScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
@@ -92,7 +182,7 @@ export default function AccountScreen() {
 
           <Card variant="secondary" style={styles.optionsCard}>
             {/* Option 1 */}
-            <TouchableOpacity style={styles.optionRow}>
+            <TouchableOpacity style={styles.optionRow} onPress={() => setProfileModal(true)}>
               <View style={styles.optionIconContainer}>
                 <Ionicons name="person-outline" size={20} color={Colors.gray600} />
               </View>
@@ -105,7 +195,7 @@ export default function AccountScreen() {
             <View style={styles.rowDivider} />
 
             {/* Option 2 */}
-            <TouchableOpacity style={styles.optionRow}>
+            <TouchableOpacity style={styles.optionRow} onPress={() => setNotifModal(true)}>
               <View style={styles.optionIconContainer}>
                 <Ionicons name="notifications-outline" size={20} color={Colors.gray600} />
               </View>
@@ -118,7 +208,7 @@ export default function AccountScreen() {
             <View style={styles.rowDivider} />
 
             {/* Option 3 */}
-            <TouchableOpacity style={styles.optionRow}>
+            <TouchableOpacity style={styles.optionRow} onPress={() => setSecurityModal(true)}>
               <View style={styles.optionIconContainer}>
                 <Ionicons name="shield-checkmark-outline" size={20} color={Colors.gray600} />
               </View>
@@ -141,11 +231,92 @@ export default function AccountScreen() {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+      
+      {/* Profile Modal */}
+      <BottomSheet visible={profileModal} onClose={() => setProfileModal(false)} title="Editar Perfil">
+        <Input 
+          label="Nombre Completo" 
+          value={name} 
+          onChangeText={setName} 
+          placeholder="Tu nombre" 
+          leftIcon="person-outline" 
+        />
+        <Input 
+          label="Correo Electrónico" 
+          value={user?.email || ""} 
+          editable={false} 
+          leftIcon="mail-outline" 
+        />
+        <Button 
+          title={savingProfile ? "Guardando..." : "Guardar Cambios"} 
+          onPress={handleSaveProfile} 
+          disabled={savingProfile} 
+          style={{ marginTop: Spacing.md }} 
+        />
+      </BottomSheet>
+
+      {/* Notifications Modal */}
+      <BottomSheet visible={notifModal} onClose={() => setNotifModal(false)} title="Notificaciones y Alertas">
+        <View style={styles.switchRow}>
+          <View style={styles.switchInfo}>
+            <Text variant="body" color="gray900" weight="600">Recordatorios de Documentos</Text>
+            <Text variant="caption" color="gray500">Avisos 60, 30 y 15 días antes de vencer SOAT, etc.</Text>
+          </View>
+          <Switch value={docAlerts} onValueChange={setDocAlerts} />
+        </View>
+        <View style={styles.rowDivider} />
+        <View style={styles.switchRow}>
+          <View style={styles.switchInfo}>
+            <Text variant="body" color="gray900" weight="600">Alertas de Mantenimiento</Text>
+            <Text variant="caption" color="gray500">Notificaciones basadas en el kilometraje</Text>
+          </View>
+          <Switch value={maintAlerts} onValueChange={setMaintAlerts} />
+        </View>
+        <View style={styles.rowDivider} />
+        <View style={styles.switchRow}>
+          <View style={styles.switchInfo}>
+            <Text variant="body" color="gray900" weight="600">Novedades Promocionales</Text>
+            <Text variant="caption" color="gray500">Recibe ofertas y nuevas características</Text>
+          </View>
+          <Switch value={promoAlerts} onValueChange={setPromoAlerts} />
+        </View>
+      </BottomSheet>
+
+      {/* Security Modal */}
+      <BottomSheet visible={securityModal} onClose={() => setSecurityModal(false)} title="Seguridad y Privacidad">
+        {hasHardware && (
+          <>
+            <View style={styles.switchRow}>
+              <View style={styles.switchInfo}>
+                <Text variant="body" color="gray900" weight="600">Inicio de Sesión Biométrico</Text>
+                <Text variant="caption" color="gray500">Usa FaceID o huella para entrar más rápido</Text>
+              </View>
+              <Switch value={bioEnabled} onValueChange={toggleBiometrics} />
+            </View>
+            <View style={styles.rowDivider} />
+          </>
+        )}
+        
+        <TouchableOpacity style={styles.dangerRow} onPress={handleDeleteAccount}>
+          <Ionicons name="trash-outline" size={24} color={Colors.danger} style={{ marginRight: Spacing.md }} />
+          <View style={styles.switchInfo}>
+            <Text variant="body" color="danger" weight="600">Eliminar Cuenta</Text>
+            <Text variant="caption" color="gray500">Borrar permanentemente todos tus datos</Text>
+          </View>
+          <Ionicons name="chevron-forward-outline" size={20} color={Colors.gray400} />
+        </TouchableOpacity>
+      </BottomSheet>
+
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.primary500,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: Colors.gray50,
@@ -229,5 +400,20 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderColor: Colors.danger,
+  },
+  switchRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+  },
+  switchInfo: {
+    flex: 1,
+    paddingRight: Spacing.md,
+  },
+  dangerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.md,
   },
 });

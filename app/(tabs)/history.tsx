@@ -138,14 +138,19 @@ export default function HistoryScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingArea}>
-        <ActivityIndicator size="large" color={Colors.primary500} />
-      </SafeAreaView>
+      <View style={styles.container}>
+        <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+        <SafeAreaView edges={["left", "right", "bottom"]} style={styles.loadingArea}>
+          <ActivityIndicator size="large" color={Colors.primary500} />
+        </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
       {/* Vehicle Picker Modal */}
       <VehiclePicker
         visible={pickerVisible}
@@ -278,11 +283,16 @@ export default function HistoryScreen() {
           </Text>
         </View>
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.primary500,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: Colors.white,
