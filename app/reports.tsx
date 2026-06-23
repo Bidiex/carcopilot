@@ -222,7 +222,7 @@ export default function ReportsScreen() {
     <SafeAreaView style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back-outline" size={24} color={Colors.gray900} />
         </TouchableOpacity>
         <Text variant="heading2" color="gray900" weight="700">

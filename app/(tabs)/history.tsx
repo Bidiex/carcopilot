@@ -184,7 +184,7 @@ export default function HistoryScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.categoriesList}
           renderItem={({ item }) => (
-            <TouchableOpacity
+            <TouchableOpacity activeOpacity={0.7}
               style={[
                 styles.categoryChip,
                 selectedCategory === item.id && styles.categoryChipActive
@@ -222,7 +222,7 @@ export default function HistoryScreen() {
             </Text>
           )}
           renderItem={({ item: log }) => (
-            <TouchableOpacity
+            <TouchableOpacity activeOpacity={0.7}
               style={styles.transactionRow}
               onPress={() => router.push(`/${log.record_type === 'fuel' ? 'fuel-log' : log.record_type === 'electric-charge' ? 'electric-charge' : log.record_type === 'maintenance' ? 'maintenance' : log.record_type === 'tax' ? 'tax' : 'other-expense'}/${log.id}` as any)}
             >

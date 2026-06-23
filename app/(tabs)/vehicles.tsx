@@ -158,7 +158,7 @@ export default function VehiclesScreen() {
             </Text>
           </View>
           {vehicles.length > 0 && (
-            <TouchableOpacity 
+            <TouchableOpacity activeOpacity={0.7} 
               style={styles.headerAddButton}
               onPress={() => router.push("/vehicle-new")}
               activeOpacity={0.8}
@@ -223,7 +223,7 @@ export default function VehiclesScreen() {
                     )}
                   </View>
                 </View>
-                <TouchableOpacity 
+                <TouchableOpacity activeOpacity={0.7} 
                   style={styles.editModelButton}
                   onPress={() => openEditModal(vehicle)}
                 >
@@ -264,7 +264,7 @@ export default function VehiclesScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text variant="heading2" color="gray900" weight="700">Editar Modelo</Text>
-              <TouchableOpacity onPress={() => setEditingVehicle(null)}>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => setEditingVehicle(null)}>
                 <Ionicons name="close" size={24} color={Colors.gray900} />
               </TouchableOpacity>
             </View>
@@ -284,7 +284,7 @@ export default function VehiclesScreen() {
                   const imageKey = `${item.id}_${currentColor}.webp`;
 
                   return (
-                    <TouchableOpacity
+                    <TouchableOpacity activeOpacity={0.7}
                       style={[styles.carouselItem, isSelected && styles.carouselItemSelected]}
                       onPress={() => {
                         setSelectedModelId(item.id);
@@ -303,7 +303,7 @@ export default function VehiclesScreen() {
                       
                       <View style={styles.colorDotsContainer}>
                         {item.colors.map(color => (
-                          <TouchableOpacity
+                          <TouchableOpacity activeOpacity={0.7}
                             key={color}
                             style={[
                               styles.colorDot,
@@ -505,7 +505,6 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderWidth: 2,
     borderColor: Colors.gray100,
-    ...Shadows.card,
     position: "relative",
   },
   carouselItemSelected: {

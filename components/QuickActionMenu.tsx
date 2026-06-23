@@ -29,7 +29,7 @@ export const QuickActionMenu: React.FC<QuickActionMenuProps> = ({
 
   return (
     <>
-      <TouchableOpacity
+      <TouchableOpacity activeOpacity={0.7}
         style={[
           styles.fabButton, 
           isLight && { backgroundColor: Colors.white },
@@ -49,28 +49,28 @@ export const QuickActionMenu: React.FC<QuickActionMenuProps> = ({
         <TouchableWithoutFeedback onPress={() => setVisible(false)}>
           <View style={styles.overlay}>
             <View style={styles.menuContainer}>
-              <TouchableOpacity style={styles.menuItem} onPress={() => handleAction(isElectric ? "charge" : "fuel")}>
+              <TouchableOpacity activeOpacity={0.7} style={styles.menuItem} onPress={() => handleAction(isElectric ? "charge" : "fuel")}>
                 <View style={[styles.iconBox, { backgroundColor: Colors.primary50 }]}>
                   <Ionicons name={isElectric ? "flash-outline" : "water-outline"} size={20} color={Colors.primary500} />
                 </View>
                 <Text variant="body" color="gray800" weight="600">{isElectric ? "Recarga" : "Tanqueo"}</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => handleAction("maintenance")}>
+              <TouchableOpacity activeOpacity={0.7} style={styles.menuItem} onPress={() => handleAction("maintenance")}>
                 <View style={[styles.iconBox, { backgroundColor: Colors.warning50 }]}>
                   <Ionicons name="build-outline" size={20} color={Colors.warning500} />
                 </View>
                 <Text variant="body" color="gray800" weight="600">Taller / Mto.</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => handleAction("tax")}>
+              <TouchableOpacity activeOpacity={0.7} style={styles.menuItem} onPress={() => handleAction("tax")}>
                 <View style={[styles.iconBox, { backgroundColor: Colors.success50 }]}>
                   <Ionicons name="document-text-outline" size={20} color={Colors.success500} />
                 </View>
                 <Text variant="body" color="gray800" weight="600">Impuestos / SOAT</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => handleAction("other")}>
+              <TouchableOpacity activeOpacity={0.7} style={styles.menuItem} onPress={() => handleAction("other")}>
                 <View style={[styles.iconBox, { backgroundColor: Colors.gray100 }]}>
                   <Ionicons name="cube-outline" size={20} color={Colors.gray700} />
                 </View>

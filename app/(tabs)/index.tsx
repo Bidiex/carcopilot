@@ -395,13 +395,13 @@ export default function HomeScreen() {
                 <Text variant="sectionTitle" color="gray900" style={styles.sectionTitle}>
                   Tendencia de Gastos
                 </Text>
-                <TouchableOpacity onPress={() => router.push("/reports" as any)}>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/reports" as any)}>
                   <Text variant="body" color="primary500" weight="600">Ver todas</Text>
                 </TouchableOpacity>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={styles.filtersContainer}>
                 {["total", "fuel", "maint", "tax", "other"].map((filter) => (
-                  <TouchableOpacity
+                  <TouchableOpacity activeOpacity={0.7}
                     key={filter}
                     style={[styles.filterChip, chartFilter === filter && styles.filterChipActive]}
                     onPress={() => setChartFilter(filter as any)}
@@ -527,7 +527,7 @@ export default function HomeScreen() {
                 <Text variant="sectionTitle" color="gray900" style={styles.sectionTitle}>
                   Historial Reciente
                 </Text>
-                <TouchableOpacity onPress={() => router.push("/history")}>
+                <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/history")}>
                   <Text variant="body" color="primary500" weight="600">Ver todo</Text>
                 </TouchableOpacity>
               </View>
@@ -536,7 +536,7 @@ export default function HomeScreen() {
                 <Card variant="secondary" style={styles.transactionsCard}>
                   {recentLogs.map((log, index) => (
                     <React.Fragment key={`${log.record_type}-${log.id}`}>
-                      <TouchableOpacity
+                      <TouchableOpacity activeOpacity={0.7}
                         style={styles.transactionRow}
                         onPress={() => router.push(`/${log.record_type === 'fuel' ? 'fuel-log' : log.record_type === 'electric-charge' ? 'electric-charge' : log.record_type === 'maintenance' ? 'maintenance' : log.record_type === 'tax' ? 'tax' : 'other-expense'}/${log.id}` as any)}
                       >

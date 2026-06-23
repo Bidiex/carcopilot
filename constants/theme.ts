@@ -24,8 +24,12 @@ export const Colors = {
   gray900: "#17171C",
 
   success: "#2ECC71",
+  success50: "#EAF9F0",
+  success500: "#2ECC71",
   danger: "#FF4D4F",
   warning: "#F5A623",
+  warning50: "#FEF6E9",
+  warning500: "#F5A623",
 };
 
 export const Spacing = {
@@ -46,6 +50,36 @@ export const Radius = {
 };
 
 export const Shadows = {
+  sm: {
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    elevation: 2,
+  },
+  md: {
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    elevation: 6,
+  },
   card: {
     shadowColor: "#000",
     shadowOpacity: 0.05,

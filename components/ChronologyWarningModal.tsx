@@ -38,7 +38,7 @@ export function ChronologyWarningModal({
                 <Button
                   title="Revisar de nuevo"
                   onPress={onCancel}
-                  variant="outline"
+                  variant="ghost"
                   style={styles.button}
                 />
                 <Button

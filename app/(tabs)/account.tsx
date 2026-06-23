@@ -166,7 +166,7 @@ export default function AccountScreen() {
                 Plan Standard (Gratuito)
               </Text>
             </View>
-            <TouchableOpacity style={styles.upgradeButton}>
+            <TouchableOpacity activeOpacity={0.7} style={styles.upgradeButton}>
               <Text variant="smallLabel" color="white" weight="600">
                 PRO
               </Text>
@@ -182,7 +182,7 @@ export default function AccountScreen() {
 
           <Card variant="secondary" style={styles.optionsCard}>
             {/* Option 1 */}
-            <TouchableOpacity style={styles.optionRow} onPress={() => setProfileModal(true)}>
+            <TouchableOpacity activeOpacity={0.7} style={styles.optionRow} onPress={() => setProfileModal(true)}>
               <View style={styles.optionIconContainer}>
                 <Ionicons name="person-outline" size={20} color={Colors.gray600} />
               </View>
@@ -195,7 +195,7 @@ export default function AccountScreen() {
             <View style={styles.rowDivider} />
 
             {/* Option 2 */}
-            <TouchableOpacity style={styles.optionRow} onPress={() => setNotifModal(true)}>
+            <TouchableOpacity activeOpacity={0.7} style={styles.optionRow} onPress={() => setNotifModal(true)}>
               <View style={styles.optionIconContainer}>
                 <Ionicons name="notifications-outline" size={20} color={Colors.gray600} />
               </View>
@@ -208,7 +208,7 @@ export default function AccountScreen() {
             <View style={styles.rowDivider} />
 
             {/* Option 3 */}
-            <TouchableOpacity style={styles.optionRow} onPress={() => setSecurityModal(true)}>
+            <TouchableOpacity activeOpacity={0.7} style={styles.optionRow} onPress={() => setSecurityModal(true)}>
               <View style={styles.optionIconContainer}>
                 <Ionicons name="shield-checkmark-outline" size={20} color={Colors.gray600} />
               </View>
@@ -297,7 +297,7 @@ export default function AccountScreen() {
           </>
         )}
         
-        <TouchableOpacity style={styles.dangerRow} onPress={handleDeleteAccount}>
+        <TouchableOpacity activeOpacity={0.7} style={styles.dangerRow} onPress={handleDeleteAccount}>
           <Ionicons name="trash-outline" size={24} color={Colors.danger} style={{ marginRight: Spacing.md }} />
           <View style={styles.switchInfo}>
             <Text variant="body" color="danger" weight="600">Eliminar Cuenta</Text>

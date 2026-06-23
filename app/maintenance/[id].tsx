@@ -241,13 +241,13 @@ export default function MaintenanceEditScreen() {
         style={styles.keyboardView}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back-outline" size={24} color={Colors.gray900} />
           </TouchableOpacity>
           <Text variant="heading2" color="gray900" weight="700">
             Editar Mantenimiento
           </Text>
-          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+          <TouchableOpacity activeOpacity={0.7} onPress={handleDelete} style={styles.deleteButton}>
             <Ionicons name="trash-outline" size={24} color={Colors.danger} />
           </TouchableOpacity>
         </View>

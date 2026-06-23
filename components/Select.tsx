@@ -101,7 +101,7 @@ export const Select: React.FC<SelectProps> = ({
           >
             {/* Modal Header */}
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+              <TouchableOpacity activeOpacity={0.7} onPress={() => setModalVisible(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={28} color={Colors.gray900} />
               </TouchableOpacity>
               <Text variant="heading2" color="gray900" weight="700">
@@ -129,7 +129,7 @@ export const Select: React.FC<SelectProps> = ({
               keyExtractor={(item) => item.value}
               contentContainerStyle={styles.listContent}
               renderItem={({ item }) => (
-                <TouchableOpacity
+                <TouchableOpacity activeOpacity={0.7}
                   style={[
                     styles.optionItem,
                     item.value === value && styles.optionItemSelected,

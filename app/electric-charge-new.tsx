@@ -257,7 +257,7 @@ export default function ElectricChargeNewScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back-outline" size={24} color={Colors.gray900} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>

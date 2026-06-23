@@ -442,7 +442,7 @@ export default function FuelLogEditScreen() {
         style={styles.keyboardView}
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back-outline" size={24} color={Colors.gray900} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
@@ -455,7 +455,7 @@ export default function FuelLogEditScreen() {
               </Text>
             )}
           </View>
-          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+          <TouchableOpacity activeOpacity={0.7} onPress={handleDelete} style={styles.deleteButton}>
             <Ionicons name="trash-outline" size={24} color={Colors.danger} />
           </TouchableOpacity>
         </View>
@@ -469,7 +469,7 @@ export default function FuelLogEditScreen() {
               Tipo de Carga
             </Text>
             <View style={styles.segmentedControl}>
-              <TouchableOpacity
+              <TouchableOpacity activeOpacity={0.7}
                 onPress={() => setFullTank(true)}
                 style={[
                   styles.segmentOption,
@@ -484,7 +484,7 @@ export default function FuelLogEditScreen() {
                   Tanque Lleno
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
+              <TouchableOpacity activeOpacity={0.7}
                 onPress={() => setFullTank(false)}
                 style={[
                   styles.segmentOption,
@@ -532,7 +532,7 @@ export default function FuelLogEditScreen() {
               Método de Registro
             </Text>
             <View style={styles.segmentedControl}>
-              <TouchableOpacity
+              <TouchableOpacity activeOpacity={0.7}
                 onPress={() => handleModeChange("gallons")}
                 style={[
                   styles.segmentOption,
@@ -547,7 +547,7 @@ export default function FuelLogEditScreen() {
                   Por Precio del Galón
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
+              <TouchableOpacity activeOpacity={0.7}
                 onPress={() => handleModeChange("price")}
                 style={[
                   styles.segmentOption,
@@ -617,7 +617,7 @@ export default function FuelLogEditScreen() {
           </View>
 
           <View style={styles.stationCard}>
-            <TouchableOpacity
+            <TouchableOpacity activeOpacity={0.7}
               style={[styles.gpsButton, gpsStatus === "loading" && styles.gpsButtonLoading]}
               onPress={handleGetLocation}
               disabled={gpsStatus === "loading"}

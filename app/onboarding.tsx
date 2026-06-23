@@ -416,7 +416,7 @@ export default function OnboardingScreen() {
       >
         {step > 1 && (
           <View style={styles.topHeader}>
-            <TouchableOpacity onPress={handlePrevStep} style={styles.backButton}>
+            <TouchableOpacity activeOpacity={0.7} onPress={handlePrevStep} style={styles.backButton}>
               <Ionicons name="arrow-back-outline" size={24} color={Colors.gray900} />
             </TouchableOpacity>
             {renderStepIndicator()}
@@ -480,7 +480,7 @@ export default function OnboardingScreen() {
                 style={styles.startButton}
               />
 
-              <TouchableOpacity
+              <TouchableOpacity activeOpacity={0.7}
                 onPress={() => router.push("/(auth)/login")}
                 style={styles.loginLink}
               >
@@ -756,6 +756,7 @@ export default function OnboardingScreen() {
 
                     return (
                       <TouchableOpacity
+                        activeOpacity={0.9}
                         style={[styles.carouselItem, isSelected && styles.carouselItemSelected]}
                         onPress={() => {
                           setSelectedModelId(item.id);
@@ -763,7 +764,6 @@ export default function OnboardingScreen() {
                             setSelectedColor(item.colors[0]);
                           }
                         }}
-                        activeOpacity={0.9}
                       >
                         <View style={styles.carouselImageContainer}>
                           <Image source={VEHICLE_IMAGES[imageKey]} style={styles.carouselImage} />
@@ -771,10 +771,10 @@ export default function OnboardingScreen() {
                         <Text variant="heading2" color={isSelected ? "primary500" : "gray700"} weight={isSelected ? "700" : "600"} align="center" style={styles.carouselModelName}>
                           {item.name}
                         </Text>
-                        
+
                         <View style={styles.colorDotsContainer}>
                           {item.colors.map(color => (
-                            <TouchableOpacity
+                            <TouchableOpacity activeOpacity={0.7}
                               key={color}
                               style={[
                                 styles.colorDot,
@@ -788,7 +788,7 @@ export default function OnboardingScreen() {
                             />
                           ))}
                         </View>
-                        
+
                         {isSelected && (
                           <View style={styles.checkBadge}>
                             <Ionicons name="checkmark-circle" size={24} color={Colors.primary500} />
@@ -1045,7 +1045,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: Colors.gray200,
-    ...Shadows.md,
     position: "relative",
     minHeight: 280,
   },

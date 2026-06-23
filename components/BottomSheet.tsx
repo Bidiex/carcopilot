@@ -47,7 +47,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
               <Text variant="heading2" color="gray900" weight="700">
                 {title}
               </Text>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.closeButton}>
                 <Ionicons name="close" size={24} color={Colors.gray900} />
               </TouchableOpacity>
             </View>

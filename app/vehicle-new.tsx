@@ -320,7 +320,7 @@ export default function VehicleNewScreen() {
         style={styles.keyboardView}
       >
         <View style={styles.topHeader}>
-          <TouchableOpacity onPress={() => step > 1 ? handlePrevStep() : router.back()} style={styles.backButton}>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => step > 1 ? handlePrevStep() : router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back-outline" size={24} color={Colors.gray900} />
           </TouchableOpacity>
           {renderStepIndicator()}
@@ -613,7 +613,7 @@ export default function VehicleNewScreen() {
                     const imageKey = `${item.id}_${currentColor}.webp`;
 
                     return (
-                      <TouchableOpacity
+                      <TouchableOpacity activeOpacity={0.7}
                         style={[styles.carouselItem, isSelected && styles.carouselItemSelected]}
                         onPress={() => {
                           setSelectedModelId(item.id);
@@ -632,7 +632,7 @@ export default function VehicleNewScreen() {
                         
                         <View style={styles.colorDotsContainer}>
                           {item.colors.map(color => (
-                            <TouchableOpacity
+                            <TouchableOpacity activeOpacity={0.7}
                               key={color}
                               style={[
                                 styles.colorDot,
@@ -741,7 +741,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderColor: Colors.gray200,
-    ...Shadows.sm,
     height: 120,
   },
   selectionCardActive: {
@@ -786,7 +785,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 2,
     borderColor: Colors.gray200,
-    ...Shadows.md,
     position: "relative",
     minHeight: 280,
   },

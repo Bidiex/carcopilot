@@ -61,7 +61,7 @@ export const VehiclePicker: React.FC<VehiclePickerProps> = ({
                 <Text variant="sectionTitle" color="gray900" weight="600">
                   Seleccionar vehículo
                 </Text>
-                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.closeButton}>
                   <Ionicons name="close" size={22} color={Colors.gray600} />
                 </TouchableOpacity>
               </View>
@@ -71,7 +71,7 @@ export const VehiclePicker: React.FC<VehiclePickerProps> = ({
               {/* "Todos" option */}
               {showAll && (
                 <>
-                  <TouchableOpacity
+                  <TouchableOpacity activeOpacity={0.7}
                     style={styles.option}
                     onPress={() => handleSelect(null)}
                   >
@@ -116,7 +116,7 @@ export const VehiclePicker: React.FC<VehiclePickerProps> = ({
                   const sublabel = item.plate || "Sin placa";
 
                   return (
-                    <TouchableOpacity
+                    <TouchableOpacity activeOpacity={0.7}
                       style={[styles.option, isSelected && styles.optionActive]}
                       onPress={() => handleSelect(item.id)}
                     >
@@ -205,7 +205,7 @@ export const VehiclePickerPill: React.FC<VehiclePickerPillProps> = ({
   const isLight = variant === "light";
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity activeOpacity={0.7} 
       style={[styles.pill, isLight && { backgroundColor: "rgba(255,255,255,0.2)" }]} 
       onPress={onPress}
     >
