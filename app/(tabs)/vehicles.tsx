@@ -158,10 +158,10 @@ export default function VehiclesScreen() {
             </Text>
           </View>
           {vehicles.length > 0 && (
-            <TouchableOpacity activeOpacity={0.7} 
+            <TouchableOpacity
+              activeOpacity={0.8}
               style={styles.headerAddButton}
               onPress={() => router.push("/vehicle-new")}
-              activeOpacity={0.8}
             >
               <Ionicons name="add" size={24} color={Colors.white} />
             </TouchableOpacity>
@@ -284,7 +284,8 @@ export default function VehiclesScreen() {
                   const imageKey = `${item.id}_${currentColor}.webp`;
 
                   return (
-                    <TouchableOpacity activeOpacity={0.7}
+                    <TouchableOpacity
+                      activeOpacity={0.9}
                       style={[styles.carouselItem, isSelected && styles.carouselItemSelected]}
                       onPress={() => {
                         setSelectedModelId(item.id);
@@ -292,7 +293,6 @@ export default function VehiclesScreen() {
                           setSelectedColor(item.colors[0]);
                         }
                       }}
-                      activeOpacity={0.9}
                     >
                       <View style={styles.carouselImageContainer}>
                         <Image source={VEHICLE_IMAGES[imageKey]} style={styles.carouselImage} />

@@ -613,7 +613,8 @@ export default function VehicleNewScreen() {
                     const imageKey = `${item.id}_${currentColor}.webp`;
 
                     return (
-                      <TouchableOpacity activeOpacity={0.7}
+                      <TouchableOpacity
+                        activeOpacity={0.9}
                         style={[styles.carouselItem, isSelected && styles.carouselItemSelected]}
                         onPress={() => {
                           setSelectedModelId(item.id);
@@ -621,7 +622,6 @@ export default function VehicleNewScreen() {
                             setSelectedColor(item.colors[0]);
                           }
                         }}
-                        activeOpacity={0.9}
                       >
                         <View style={styles.carouselImageContainer}>
                           <Image source={VEHICLE_IMAGES[imageKey]} style={styles.carouselImage} />
