@@ -30,6 +30,7 @@ export default function VehiclesScreen() {
 
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Edit Model State
   const { showAlert } = useAlert();
@@ -76,7 +77,7 @@ export default function VehiclesScreen() {
         setVehicles(vehiclesWithOdo);
       }
     } catch {
-      // Errores silenciados
+      setFetchError("No se pudieron cargar los vehículos.");
     } finally {
       setLoading(false);
     }
@@ -167,6 +168,18 @@ export default function VehiclesScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {fetchError && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.errorBanner}
+            onPress={() => { setFetchError(null); setLoading(true); fetchVehicles(); }}
+          >
+            <Ionicons name="alert-circle-outline" size={16} color={Colors.danger} />
+            <Text variant="caption" color="danger" style={styles.errorBannerText}>{fetchError}</Text>
+            <Text variant="caption" color="primary500" weight="600">Reintentar</Text>
+          </TouchableOpacity>
+        )}
 
         {vehicles.length > 0 ? (
           <View style={styles.listSection}>
@@ -472,6 +485,19 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
     lineHeight: 20,
   },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(220,38,38,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(220,38,38,0.2)",
+    borderRadius: 10,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.md,
+    gap: Spacing.xs,
+  },
+  errorBannerText: { flex: 1, marginLeft: 4 },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",

@@ -6,6 +6,7 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -36,6 +37,7 @@ export default function MaintenanceNewScreen() {
 
   const activeVehicle = vehicles.find(v => v.id === selectedVehicleId) || null;
   const [loading, setLoading] = useState(false);
+  const [fetchingVehicle, setFetchingVehicle] = useState(true);
 
   const { data: lastOdo } = useLastOdometer(activeVehicle?.id);
 
@@ -75,7 +77,9 @@ export default function MaintenanceNewScreen() {
         }
       };
 
-      fetchVehicles();
+      fetchVehicles().finally(() => setFetchingVehicle(false));
+    } else {
+      setFetchingVehicle(false);
     }
   }, [user, vehicleId]);
 
@@ -170,6 +174,14 @@ export default function MaintenanceNewScreen() {
     
     await executeCreate();
   };
+
+  if (fetchingVehicle) {
+    return (
+      <SafeAreaView style={styles.loadingArea}>
+        <ActivityIndicator size="large" color={Colors.primary500} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -287,6 +299,7 @@ export default function MaintenanceNewScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.gray50 },
+  loadingArea: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.gray50 },
   keyboardView: { flex: 1 },
   header: {
     flexDirection: "row",

@@ -51,6 +51,7 @@ export default function HomeScreen() {
 
   const [recentLogs, setRecentLogs] = useState<any[]>(dashboardCache?.recentLogs || []);
   const [loading, setLoading] = useState(vehicles.length === 0);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // New metrics states
   const [monthlyStats, setMonthlyStats] = useState(dashboardCache?.monthlyStats || { total: 0, fuel: 0, maint: 0, tax: 0, other: 0 });
@@ -228,7 +229,7 @@ export default function HomeScreen() {
           };
 
         } catch (e) {
-          console.error(e);
+          if (isMounted) setFetchError("No se pudieron cargar los datos. Toca para reintentar.");
         } finally {
           if (isMounted) setLoading(false);
         }
@@ -306,6 +307,17 @@ export default function HomeScreen() {
         }}
       />
 
+      {fetchError && (
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.errorBanner}
+          onPress={() => { setFetchError(null); setLoading(true); }}
+        >
+          <Ionicons name="alert-circle-outline" size={16} color={Colors.danger} />
+          <Text variant="caption" color="danger" style={styles.errorBannerText}>{fetchError}</Text>
+          <Text variant="caption" color="primary500" weight="600">Reintentar</Text>
+        </TouchableOpacity>
+      )}
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
@@ -607,6 +619,20 @@ const styles = StyleSheet.create({
   scrollContainer: { paddingHorizontal: Layout.screenPadding, paddingTop: Spacing.md, paddingBottom: Spacing.xxl },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: Layout.verticalRhythm, zIndex: 10 },
   headerRight: { flexDirection: "row", alignItems: "center", gap: Spacing.sm },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(220,38,38,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(220,38,38,0.2)",
+    borderRadius: 10,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginHorizontal: Layout.screenPadding,
+    marginTop: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  errorBannerText: { flex: 1, marginLeft: 4 },
   summaryCardContainer: { marginBottom: 0 },
   summaryCard: { marginBottom: 0, position: "relative" },
   cardCarOverlay: {

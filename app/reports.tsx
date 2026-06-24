@@ -23,6 +23,7 @@ export default function ReportsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
 
   const [fuelTotal, setFuelTotal] = useState(0);
@@ -171,7 +172,7 @@ export default function ReportsScreen() {
       setMonthlyData(chartData);
 
     } catch (error) {
-      console.log("Error loading report", error);
+      setFetchError("No se pudieron cargar los reportes. Toca para reintentar.");
     } finally {
       setLoading(false);
     }
@@ -232,6 +233,17 @@ export default function ReportsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {fetchError && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.errorBanner}
+            onPress={() => { setFetchError(null); setLoading(true); loadReportData(); }}
+          >
+            <Ionicons name="alert-circle-outline" size={16} color={Colors.danger} />
+            <Text variant="caption" color="danger" style={styles.errorBannerText}>{fetchError}</Text>
+            <Text variant="caption" color="primary500" weight="600">Reintentar</Text>
+          </TouchableOpacity>
+        )}
         {/* KPIs */}
         <View style={styles.kpiGrid}>
           <View style={styles.kpiCard}>
@@ -335,6 +347,19 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.gray50 },
   loadingArea: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.gray50 },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(220,38,38,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(220,38,38,0.2)",
+    borderRadius: 10,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  errorBannerText: { flex: 1, marginLeft: 4 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",

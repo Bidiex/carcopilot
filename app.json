@@ -2,6 +2,7 @@
   "expo": {
     "name": "carcopilot",
     "slug": "carcopilot",
+    "owner": "vosstra",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -12,6 +13,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.vosstra.carcopilot",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -45,6 +47,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a160f2a7-2c8b-4dc2-99fb-06ea4129ce37"
+      }
     }
   }
 }

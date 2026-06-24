@@ -37,6 +37,7 @@ export default function HistoryScreen() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -88,7 +89,7 @@ export default function HistoryScreen() {
           if (isMounted) setLogs(allLogs);
 
         } catch (error) {
-          console.error(error);
+          if (isMounted) setFetchError("No se pudo cargar el historial. Toca para reintentar.");
         } finally {
           if (isMounted) setLoading(false);
         }
@@ -208,6 +209,18 @@ export default function HistoryScreen() {
           )}
         />
       </View>
+
+      {fetchError && (
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.errorBanner}
+          onPress={() => { setFetchError(null); setLoading(true); }}
+        >
+          <Ionicons name="alert-circle-outline" size={16} color={Colors.danger} />
+          <Text variant="caption" color="danger" style={styles.errorBannerText}>{fetchError}</Text>
+          <Text variant="caption" color="primary500" weight="600">Reintentar</Text>
+        </TouchableOpacity>
+      )}
 
       {sections.length > 0 ? (
         <SectionList
@@ -381,4 +394,18 @@ const styles = StyleSheet.create({
   emptyTitle: {
     marginBottom: Spacing.xs,
   },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(220,38,38,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(220,38,38,0.2)",
+    borderRadius: 10,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginHorizontal: Layout.screenPadding,
+    marginVertical: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  errorBannerText: { flex: 1, marginLeft: 4 },
 });
