@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 import { getColombiaYear } from "@/lib/date";
 import { formatPlate, validatePlate } from "@/lib/validation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -97,6 +98,7 @@ const GASOLINE_SUBTYPES = [
 export default function OnboardingScreen() {
   const router = useRouter();
   const { showAlert } = useAlert();
+  const { refreshProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -353,14 +355,24 @@ export default function OnboardingScreen() {
           console.error("Error creating vehicle post-signup:", vehicleError);
         }
 
+        // Activar trial_started_at al completar onboarding
+        await supabase
+          .from('profiles')
+          .update({
+            trial_started_at: new Date().toISOString(),
+            plan: 'trial',
+          })
+          .eq('id', data.user.id);
+
         showAlert(
           "¡Registro Exitoso!",
           "Tu cuenta y vehículo han sido configurados correctamente.",
           [
             {
               text: "Entrar",
-              onPress: () => {
+              onPress: async () => {
                 scheduleWelcomeNotification();
+                await refreshProfile();
                 router.replace("/(tabs)");
               },
             },

@@ -18,12 +18,15 @@ import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { useActionGuard } from "@/hooks/useActionGuard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 export default function OtherExpenseEditScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
   const { showAlert } = useAlert();
+  const { guardAction, showUpgradeModal, closeUpgradeModal } = useActionGuard();
 
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -233,12 +236,17 @@ export default function OtherExpenseEditScreen() {
 
           <Button
             title="Actualizar Registro"
-            onPress={handleUpdate}
+            onPress={() => guardAction(handleUpdate)}
             loading={loading}
             style={styles.submitButton}
           />
         </ScrollView>
       </KeyboardAvoidingView>
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={closeUpgradeModal}
+        onUpgrade={() => { closeUpgradeModal(); router.push('/upgrade' as any); }}
+      />
     </SafeAreaView>
   );
 }

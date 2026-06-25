@@ -21,12 +21,15 @@ import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { VEHICLE_IMAGES, VEHICLE_MODELS, CAR_COLORS } from "@/constants/vehicles";
 import { useAlert } from "@/context/AlertContext";
+import { useActionGuard } from "@/hooks/useActionGuard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const { width } = Dimensions.get("window");
 
 export default function VehiclesScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const { guardAction, showUpgradeModal, closeUpgradeModal } = useActionGuard();
 
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,7 +165,7 @@ export default function VehiclesScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               style={styles.headerAddButton}
-              onPress={() => router.push("/vehicle-new")}
+              onPress={() => guardAction(() => router.push("/vehicle-new"))}
             >
               <Ionicons name="add" size={24} color={Colors.white} />
             </TouchableOpacity>
@@ -351,6 +354,11 @@ export default function VehiclesScreen() {
           </View>
         </View>
       </Modal>
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={closeUpgradeModal}
+        onUpgrade={() => { closeUpgradeModal(); router.push('/upgrade' as any); }}
+      />
       </SafeAreaView>
     </View>
   );

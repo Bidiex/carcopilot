@@ -25,6 +25,8 @@ import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { VEHICLE_MODELS, VEHICLE_IMAGES, CAR_COLORS } from "@/constants/vehicles";
+import { useActionGuard } from "@/hooks/useActionGuard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 type VehicleType = "car" | "moto";
 type PropulsionType = "combustion" | "electric";
@@ -95,6 +97,7 @@ export default function VehicleNewScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { showAlert } = useAlert();
+  const { guardAction, showUpgradeModal, closeUpgradeModal } = useActionGuard();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -660,7 +663,7 @@ export default function VehicleNewScreen() {
 
               <Button
                 title="Completar Registro"
-                onPress={handleCreate}
+                onPress={() => guardAction(handleCreate)}
                 loading={loading}
                 style={styles.submitButton}
               />
@@ -669,6 +672,11 @@ export default function VehicleNewScreen() {
 
         </ScrollView>
       </KeyboardAvoidingView>
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={closeUpgradeModal}
+        onUpgrade={() => { closeUpgradeModal(); router.push('/upgrade' as any); }}
+      />
     </SafeAreaView>
   );
 }

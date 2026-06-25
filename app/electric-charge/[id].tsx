@@ -23,6 +23,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
 import { checkChronologyBreak } from "@/lib/chronology";
 import { recalculateConsumption } from "@/lib/consumption";
+import { useActionGuard } from "@/hooks/useActionGuard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const CHARGE_TYPES = [
   { label: "Carga Lenta (Slow)", value: "slow" },
@@ -35,6 +37,7 @@ export default function ElectricChargeEditScreen() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
   const { showAlert } = useAlert();
+  const { guardAction, showUpgradeModal, closeUpgradeModal } = useActionGuard();
 
   const [activeVehicle, setActiveVehicle] = useState<any>(null);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -377,7 +380,7 @@ export default function ElectricChargeEditScreen() {
 
           <Button
             title="Actualizar Registro"
-            onPress={handleUpdate}
+            onPress={() => guardAction(handleUpdate)}
             loading={loading}
             style={styles.submitButton}
           />
@@ -388,6 +391,11 @@ export default function ElectricChargeEditScreen() {
         visible={showChronologyModal}
         onCancel={() => setShowChronologyModal(false)}
         onConfirm={executeUpdate}
+      />
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={closeUpgradeModal}
+        onUpgrade={() => { closeUpgradeModal(); router.push('/upgrade' as any); }}
       />
     </SafeAreaView>
   );

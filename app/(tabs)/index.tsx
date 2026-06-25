@@ -22,6 +22,8 @@ import { VehiclePicker, VehiclePickerPill } from "@/components/VehiclePicker";
 import { QuickActionMenu } from "@/components/QuickActionMenu";
 import { LineChart } from "react-native-gifted-charts";
 import { VEHICLE_IMAGES } from "@/constants/vehicles";
+import { useActionGuard } from "@/hooks/useActionGuard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -30,6 +32,7 @@ let dashboardCache: any = null;
 export default function HomeScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const { guardAction, showUpgradeModal, closeUpgradeModal } = useActionGuard();
 
   const lastUserIdRef = React.useRef<string | null>(null);
   if (user && lastUserIdRef.current !== user.id) {
@@ -251,13 +254,15 @@ export default function HomeScreen() {
 
   const handleQuickAction = (action: "fuel" | "charge" | "maintenance" | "tax" | "other") => {
     const params = actionVehicle ? { vehicleId: actionVehicle.id } : undefined;
-    switch (action) {
-      case "fuel": router.push({ pathname: "/fuel-log-new", params }); break;
-      case "charge": router.push({ pathname: "/electric-charge-new", params }); break;
-      case "maintenance": router.push({ pathname: "/maintenance-new", params }); break;
-      case "tax": router.push({ pathname: "/tax-new", params }); break;
-      case "other": router.push({ pathname: "/other-expense-new", params }); break;
-    }
+    guardAction(() => {
+      switch (action) {
+        case "fuel": router.push({ pathname: "/fuel-log-new", params }); break;
+        case "charge": router.push({ pathname: "/electric-charge-new", params }); break;
+        case "maintenance": router.push({ pathname: "/maintenance-new", params }); break;
+        case "tax": router.push({ pathname: "/tax-new", params }); break;
+        case "other": router.push({ pathname: "/other-expense-new", params }); break;
+      }
+    });
   };
 
   const chartDataToRender = useMemo(() => {
@@ -305,6 +310,12 @@ export default function HomeScreen() {
           setLoading(true);
           setSelectedVehicleId(id);
         }}
+      />
+
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={closeUpgradeModal}
+        onUpgrade={() => { closeUpgradeModal(); router.push('/upgrade' as any); }}
       />
 
       {fetchError && (

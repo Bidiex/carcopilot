@@ -20,11 +20,14 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { useActionGuard } from "@/hooks/useActionGuard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 export default function OtherExpenseNewScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { showAlert } = useAlert();
+  const { guardAction, showUpgradeModal, closeUpgradeModal } = useActionGuard();
 
   const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -235,12 +238,17 @@ export default function OtherExpenseNewScreen() {
 
           <Button
             title="Guardar Registro"
-            onPress={handleCreate}
+            onPress={() => guardAction(handleCreate)}
             loading={loading}
             style={styles.submitButton}
           />
         </ScrollView>
       </KeyboardAvoidingView>
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={closeUpgradeModal}
+        onUpgrade={() => { closeUpgradeModal(); router.push('/upgrade' as any); }}
+      />
     </SafeAreaView>
   );
 }

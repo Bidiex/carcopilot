@@ -4,6 +4,10 @@ import { Colors, Shadows } from "@/constants/theme";
 import { Platform, View, TouchableOpacity, StyleSheet } from "react-native";
 import { useStartupRecalculation } from "@/hooks/useStartupRecalculation";
 import { LinearGradient } from "expo-linear-gradient";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { TrialModal } from "@/components/TrialModal";
+import { supabase } from "@/lib/supabase";
 
 const AITabBarButton = ({ children, onPress }: any) => (
   <TouchableOpacity
@@ -25,90 +29,115 @@ const AITabBarButton = ({ children, onPress }: any) => (
 export default function TabLayout() {
   useStartupRecalculation();
 
+  const { planStatus, trialDaysRemaining, user, profile, refreshProfile } = useAuth();
+  const [trialModalVisible, setTrialModalVisible] = useState(true);
+
+  // Activar trial_started_at para usuarios que llegaron por verificación de email
+  // (tienen perfil pero sin trial_started_at)
+  useEffect(() => {
+    if (user && profile && !profile.trial_started_at) {
+      supabase
+        .from('profiles')
+        .update({
+          trial_started_at: new Date().toISOString(),
+          plan: 'trial',
+        })
+        .eq('id', user.id)
+        .then(() => refreshProfile());
+    }
+  }, [user?.id, profile?.trial_started_at]);
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: Colors.primary500,
-        tabBarInactiveTintColor: Colors.gray400,
-        tabBarStyle: {
-          height: 72,
-          backgroundColor: Colors.white,
-          borderTopWidth: 1,
-          borderTopColor: Colors.gray200,
-          paddingTop: 8,
-          paddingBottom: Platform.OS === "ios" ? 20 : 10,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontFamily: "Montserrat_500Medium",
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Inicio",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              size={24}
-              name={focused ? "home" : "home-outline"}
-              color={color}
-            />
-          ),
-        }}
+    <>
+      <TrialModal
+        visible={planStatus === 'trial' && trialModalVisible}
+        daysRemaining={trialDaysRemaining}
+        onClose={() => setTrialModalVisible(false)}
       />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: "Historial",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              size={24}
-              name={focused ? "time" : "time-outline"}
-              color={color}
-            />
-          ),
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: Colors.primary500,
+          tabBarInactiveTintColor: Colors.gray400,
+          tabBarStyle: {
+            height: 72,
+            backgroundColor: Colors.white,
+            borderTopWidth: 1,
+            borderTopColor: Colors.gray200,
+            paddingTop: 8,
+            paddingBottom: Platform.OS === "ios" ? 20 : 10,
+          },
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontFamily: "Montserrat_500Medium",
+          },
         }}
-      />
-      <Tabs.Screen
-        name="ai"
-        options={{
-          title: "Copilot",
-          tabBarLabel: () => null,
-          tabBarIcon: () => (
-            <Ionicons name="sparkles" size={28} color={Colors.white} />
-          ),
-          tabBarButton: (props) => <AITabBarButton {...props} />,
-        }}
-      />
-      <Tabs.Screen
-        name="vehicles"
-        options={{
-          title: "Vehículos",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              size={24}
-              name={focused ? "car" : "car-outline"}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="account"
-        options={{
-          title: "Cuenta",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              size={24}
-              name={focused ? "person" : "person-outline"}
-              color={color}
-            />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Inicio",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={24}
+                name={focused ? "home" : "home-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="history"
+          options={{
+            title: "Historial",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={24}
+                name={focused ? "time" : "time-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="ai"
+          options={{
+            title: "Copilot",
+            tabBarLabel: () => null,
+            tabBarIcon: () => (
+              <Ionicons name="sparkles" size={28} color={Colors.white} />
+            ),
+            tabBarButton: (props) => <AITabBarButton {...props} />,
+          }}
+        />
+        <Tabs.Screen
+          name="vehicles"
+          options={{
+            title: "Vehículos",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={24}
+                name={focused ? "car" : "car-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="account"
+          options={{
+            title: "Cuenta",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                size={24}
+                name={focused ? "person" : "person-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+      </Tabs>
+    </>
   );
 }
 

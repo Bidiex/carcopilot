@@ -22,14 +22,16 @@ import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
 import { checkChronologyBreak } from "@/lib/chronology";
-
 import { MAINTENANCE_CATEGORIES, getCategoryByItem } from "@/constants/maintenance";
+import { useActionGuard } from "@/hooks/useActionGuard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 export default function MaintenanceEditScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
   const { showAlert } = useAlert();
+  const { guardAction, showUpgradeModal, closeUpgradeModal } = useActionGuard();
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -322,7 +324,7 @@ export default function MaintenanceEditScreen() {
 
           <Button
             title="Actualizar Registro"
-            onPress={handleUpdate}
+            onPress={() => guardAction(handleUpdate)}
             loading={loading}
             style={styles.submitButton}
           />
@@ -333,6 +335,11 @@ export default function MaintenanceEditScreen() {
         visible={showChronologyModal}
         onCancel={() => setShowChronologyModal(false)}
         onConfirm={executeUpdate}
+      />
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={closeUpgradeModal}
+        onUpgrade={() => { closeUpgradeModal(); router.push('/upgrade' as any); }}
       />
     </SafeAreaView>
   );

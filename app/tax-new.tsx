@@ -21,6 +21,8 @@ import { Colors, Spacing, Layout } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { scheduleDocumentReminder } from "@/lib/notifications";
 import { getColombiaDateString, getColombiaYear, addYearsToDateString } from "@/lib/date";
+import { useActionGuard } from "@/hooks/useActionGuard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const TAX_TYPES = [
   { label: "SOAT", value: "soat" },
@@ -32,6 +34,7 @@ export default function TaxNewScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { showAlert } = useAlert();
+  const { guardAction, showUpgradeModal, closeUpgradeModal } = useActionGuard();
 
   const [loading, setLoading] = useState(false);
   const [fetchingVehicle, setFetchingVehicle] = useState(true);
@@ -303,12 +306,17 @@ export default function TaxNewScreen() {
 
           <Button
             title="Guardar Registro"
-            onPress={handleCreate}
+            onPress={() => guardAction(handleCreate)}
             loading={loading}
             style={styles.submitButton}
           />
         </ScrollView>
       </KeyboardAvoidingView>
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={closeUpgradeModal}
+        onUpgrade={() => { closeUpgradeModal(); router.push('/upgrade' as any); }}
+      />
     </SafeAreaView>
   );
 }

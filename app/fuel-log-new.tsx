@@ -25,11 +25,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
 import { checkChronologyBreak } from "@/lib/chronology";
 import { recalculateConsumption } from "@/lib/consumption";
+import { useActionGuard } from "@/hooks/useActionGuard";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 export default function FuelLogNewScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { showAlert } = useAlert();
+  const { guardAction, showUpgradeModal, closeUpgradeModal } = useActionGuard();
 
   const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -627,7 +630,7 @@ export default function FuelLogNewScreen() {
 
           <Button
             title="Guardar Registro"
-            onPress={handleCreate}
+            onPress={() => guardAction(handleCreate)}
             loading={loading}
             style={styles.submitButton}
           />
@@ -638,6 +641,11 @@ export default function FuelLogNewScreen() {
         visible={showChronologyModal}
         onCancel={() => setShowChronologyModal(false)}
         onConfirm={executeCreate}
+      />
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={closeUpgradeModal}
+        onUpgrade={() => { closeUpgradeModal(); router.push('/upgrade' as any); }}
       />
     </SafeAreaView>
   );
