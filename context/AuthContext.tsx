@@ -8,6 +8,7 @@ import {
   getTrialDaysRemaining,
   canPerformActionsForProfile,
 } from '@/utils/planUtils';
+import { registerPushToken } from '@/utils/registerPushToken';
 
 type AuthContextType = {
   session: Session | null;
@@ -60,6 +61,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         await loadProfile(session.user.id);
+        registerPushToken(session.user.id).catch(() => {
+          // Silencioso — no crítico para el flujo de la app
+        });
       }
       setIsLoading(false);
     };
@@ -72,6 +76,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         await loadProfile(session.user.id);
+        registerPushToken(session.user.id).catch(() => {
+          // Silencioso — no crítico para el flujo de la app
+        });
       } else {
         setProfile(null);
       }

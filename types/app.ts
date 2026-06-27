@@ -16,3 +16,11 @@ export type Profile = {
   trial_started_at: string | null;
   created_at: string;
 };
+
+export type PushToken = {
+  id: string
+  user_id: string
+  expo_push_token: string
+  device_platform: string | null
+  updated_at: string
+}

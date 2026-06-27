@@ -93,9 +93,7 @@ export default function RootLayout() {
     Montserrat_700Bold,
   });
 
-  useEffect(() => {
-    requestNotificationPermissions();
-  }, []);
+
 
   if (!fontsLoaded) {
     return null;

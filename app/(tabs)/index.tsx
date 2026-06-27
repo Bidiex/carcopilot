@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useFocusEffect, useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
+import { requestNotificationPermissions } from "@/lib/notifications";
 import { getColombia30DaysAgoString, getColombiaDateString } from "@/lib/date";
 import { Text } from "@/components/Typography";
 import { Card } from "@/components/Card";
@@ -242,6 +243,15 @@ export default function HomeScreen() {
       return () => { isMounted = false; };
     }, [user, selectedVehicleId])
   );
+
+  useEffect(() => {
+    // Pedir permisos de notificaciones 1.5s después de montar el Dashboard
+    // para evitar conflictos con el Splash Screen o AuthContext
+    const timer = setTimeout(() => {
+      requestNotificationPermissions();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const formatCOP = (value: number) =>
     new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
