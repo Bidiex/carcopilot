@@ -1,6 +1,7 @@
 import { StyleSheet, View, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "expo-router";
 import { Text } from "@/components/Typography";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
@@ -16,8 +17,9 @@ import * as LocalAuthentication from "expo-local-authentication";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function AccountScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, planStatus, trialDaysRemaining, profile } = useAuth();
   const { showAlert } = useAlert();
+  const router = useRouter();
 
   const [profileModal, setProfileModal] = useState(false);
   const [notifModal, setNotifModal] = useState(false);
@@ -122,6 +124,12 @@ export default function AccountScreen() {
     );
   };
 
+  let proDaysRemaining = 0;
+  if (planStatus === 'active' && profile?.plan_expires_at) {
+    const diff = new Date(profile.plan_expires_at).getTime() - new Date().getTime();
+    proDaysRemaining = Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
+  }
+
   return (
     <View style={styles.container}>
       <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
@@ -157,20 +165,38 @@ export default function AccountScreen() {
 
           <View style={styles.cardDivider} />
 
-          <View style={styles.planBadgeRow}>
-            <View>
-              <Text variant="smallLabel" color="gray500">
-                Plan Actual
-              </Text>
-              <Text variant="body" color="primary500" weight="700" style={styles.planText}>
-                Plan Standard (Gratuito)
-              </Text>
+          <View style={styles.planContainer}>
+            <View style={styles.planHighlightRow}>
+              <View style={styles.planDetails}>
+                <Text variant="smallLabel" color="gray500" style={styles.planOverline}>
+                  PLAN ACTUAL
+                </Text>
+                <Text variant="body" color={planStatus === 'expired' ? 'danger' : 'gray900'} weight="700">
+                  {planStatus === 'trial' ? "Free Trial" : planStatus === 'active' ? "CarCopilot PRO" : "Plan Expirado"}
+                </Text>
+                <Text variant="caption" color={planStatus === 'expired' ? 'danger' : 'gray500'} style={{ marginTop: 2 }}>
+                  {planStatus === 'trial' ? `${trialDaysRemaining} días restantes` : planStatus === 'active' ? `${proDaysRemaining} días restantes` : "Renueva para recuperar el acceso"}
+                </Text>
+              </View>
+              
+              {planStatus !== 'active' ? (
+                <TouchableOpacity 
+                  activeOpacity={0.7} 
+                  style={styles.upgradeOutlineButton}
+                  onPress={() => router.push('/upgrade' as any)}
+                >
+                  <Text variant="smallLabel" color="primary500" weight="700">
+                    {planStatus === 'expired' ? "RENOVAR" : "VOLVERME PRO"}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={[styles.upgradeOutlineButton, { borderColor: Colors.success }]}>
+                  <Text variant="smallLabel" color="success" weight="700">
+                    ACTIVO
+                  </Text>
+                </View>
+              )}
             </View>
-            <TouchableOpacity activeOpacity={0.7} style={styles.upgradeButton}>
-              <Text variant="smallLabel" color="white" weight="600">
-                PRO
-              </Text>
-            </TouchableOpacity>
           </View>
         </Card>
 
@@ -353,19 +379,27 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.gray100,
     marginVertical: Spacing.md,
   },
-  planBadgeRow: {
+  planContainer: {
+    width: "100%",
+  },
+  planHighlightRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
   },
-  planText: {
-    marginTop: 2,
+  planDetails: {
+    flex: 1,
+    paddingRight: Spacing.sm,
   },
-  upgradeButton: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.warning,
+  planOverline: {
+    marginBottom: 4,
+  },
+  upgradeOutlineButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.primary500,
   },
   section: {
     marginBottom: Layout.verticalRhythm,

@@ -115,6 +115,21 @@ export default function HistoryScreen() {
     return logs.filter(log => log.record_type === selectedCategory);
   }, [logs, selectedCategory]);
 
+  const dynamicCategories = useMemo(() => {
+    const activeVehicles = selectedVehicleId
+      ? vehicles.filter(v => v.id === selectedVehicleId)
+      : vehicles;
+    
+    const hasCombustion = activeVehicles.some(v => v.propulsion === 'combustion' || v.propulsion === 'hybrid' || !v.propulsion);
+    const hasElectric = activeVehicles.some(v => v.propulsion === 'electric' || v.propulsion === 'hybrid');
+
+    return CATEGORIES.filter(cat => {
+      if (cat.id === 'fuel' && !hasCombustion) return false;
+      if (cat.id === 'electric-charge' && !hasElectric) return false;
+      return true;
+    });
+  }, [vehicles, selectedVehicleId]);
+
   const sections = useMemo(() => {
     const grouped = filteredLogs.reduce((acc, log) => {
       // Create a key for the month (e.g. "Junio 2026")
@@ -179,7 +194,7 @@ export default function HistoryScreen() {
 
       <View style={styles.categoriesContainer}>
         <FlatList
-          data={CATEGORIES}
+          data={dynamicCategories}
           horizontal
           showsHorizontalScrollIndicator={false}
           keyExtractor={(item) => item.id}

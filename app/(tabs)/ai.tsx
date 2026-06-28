@@ -220,7 +220,14 @@ export default function AIScreen() {
         let aiTextResponse = "";
         let functionCalled = false;
         
-        if (response.candidates && response.candidates.length > 0) {
+        if (response.error) {
+            console.error("[AI API Error]:", response.error);
+            if (response.error.code === 429 || response.error.status === 'RESOURCE_EXHAUSTED') {
+                aiTextResponse = "El servicio está saturado por límite de uso. Por favor, intenta de nuevo más tarde.";
+            } else {
+                aiTextResponse = "Hubo un problema de conexión con la inteligencia artificial.";
+            }
+        } else if (response.candidates && response.candidates.length > 0) {
             const parts = response.candidates[0].content?.parts || [];
             for (const part of parts) {
                 if (part.functionCall) {

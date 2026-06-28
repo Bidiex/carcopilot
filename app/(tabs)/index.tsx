@@ -59,7 +59,7 @@ export default function HomeScreen() {
 
   // New metrics states
   const [monthlyStats, setMonthlyStats] = useState(dashboardCache?.monthlyStats || { total: 0, fuel: 0, maint: 0, tax: 0, other: 0 });
-  const [fuelMetrics, setFuelMetrics] = useState(dashboardCache?.fuelMetrics || { lastDate: null, daysSince: null, minPrice: null, maxPrice: null, avgKmPerDay: null, avgDaysBetweenLogs: null });
+  const [fuelMetrics, setFuelMetrics] = useState(dashboardCache?.fuelMetrics || { lastDate: null, daysSince: null, minPrice: null, maxPrice: null, minPriceType: null, maxPriceType: null, avgKmPerDay: null, avgDaysBetweenLogs: null });
   const [soatDays, setSoatDays] = useState<number | null>(dashboardCache?.soatDays ?? null);
   const [chartDataMaster, setChartDataMaster] = useState<any>(dashboardCache?.chartDataMaster || []);
   
@@ -134,6 +134,8 @@ export default function HomeScreen() {
           let daysSince = null;
           let minPrice = null;
           let maxPrice = null;
+          let minPriceType = null;
+          let maxPriceType = null;
           let avgKmPerDay = null;
           let avgDaysBetweenLogs = null;
 
@@ -142,11 +144,20 @@ export default function HomeScreen() {
             const diffTime = Math.abs(new Date(getColombiaDateString()).getTime() - new Date(lastDate).getTime());
             daysSince = Math.floor(diffTime / (1000 * 60 * 60 * 24));
             
-            const prices = fuelRes.data.map(l => parseFloat(l.amount_cop) / parseFloat(l.gallons)).filter(p => !isNaN(p) && p > 0);
-            if (prices.length > 0) {
-              minPrice = Math.min(...prices);
-              maxPrice = Math.max(...prices);
-            }
+            fuelRes.data.forEach(l => {
+              const p = parseFloat(l.amount_cop) / parseFloat(l.gallons);
+              if (!isNaN(p) && p > 0) {
+                const vehicle = vhs.find((v: any) => v.id === l.vehicle_id);
+                let rawType = "Corriente";
+                if (vehicle) {
+                  rawType = vehicle.gasoline_subtype || vehicle.fuel_type || "Corriente";
+                }
+                const fType = rawType.charAt(0).toUpperCase() + rawType.slice(1).toLowerCase();
+                
+                if (minPrice === null || p < minPrice) { minPrice = p; minPriceType = fType; }
+                if (maxPrice === null || p > maxPrice) { maxPrice = p; maxPriceType = fType; }
+              }
+            });
           }
 
           // Compute new metrics using fuel and charge logs
@@ -167,7 +178,7 @@ export default function HomeScreen() {
             }
           }
 
-          if (isMounted) setFuelMetrics({ lastDate, daysSince, minPrice, maxPrice, avgKmPerDay, avgDaysBetweenLogs });
+          if (isMounted) setFuelMetrics({ lastDate, daysSince, minPrice, maxPrice, minPriceType, maxPriceType, avgKmPerDay, avgDaysBetweenLogs });
 
           // SOAT
           let daysSoat = null;
@@ -226,7 +237,7 @@ export default function HomeScreen() {
             vehicles: vhs,
             recentLogs: sliceLogs,
             monthlyStats: stats,
-            fuelMetrics: { lastDate, daysSince, minPrice, maxPrice, avgKmPerDay, avgDaysBetweenLogs },
+            fuelMetrics: { lastDate, daysSince, minPrice, maxPrice, minPriceType, maxPriceType, avgKmPerDay, avgDaysBetweenLogs },
             soatDays: daysSoat,
             chartDataMaster: masterData,
             profileName: profile?.name || "Conductor",
@@ -368,7 +379,7 @@ export default function HomeScreen() {
             {/* Total Spent Breakdown Card */}
             <View style={styles.summaryCardContainer}>
               <Card variant="primary" style={styles.summaryCard}>
-                <View style={[styles.cardHeader, !isAllMode && { maxWidth: "60%" }]}>
+                <View style={[styles.cardHeader, { maxWidth: "55%" }]}>
                   <Text variant="caption" color="white" style={styles.cardSubtitle}>
                     Gastos Últimos 30 Días
                   </Text>
@@ -397,7 +408,15 @@ export default function HomeScreen() {
 
                 {isAllMode ? (
                   <View style={styles.allVehiclesContainer}>
-                    {vehicles.slice(0, 3).reverse().map((v, i) => v.model_image && (
+                    {[...vehicles]
+                      .slice(0, 3)
+                      .reverse()
+                      .sort((a, b) => {
+                        if (a.type === "moto" && b.type !== "moto") return 1;
+                        if (a.type !== "moto" && b.type === "moto") return -1;
+                        return 0;
+                      })
+                      .map((v, i) => v.model_image && (
                       <Image
                         key={v.id}
                         source={v.type === "moto" ? BIKE_IMAGES[v.model_image] : VEHICLE_IMAGES[v.model_image]}
@@ -541,12 +560,12 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.priceRow}>
                   <View>
-                    <Text variant="caption" color="gray500">Mínimo</Text>
+                    <Text variant="caption" color="gray500">Menor{fuelMetrics.minPriceType ? ` (${fuelMetrics.minPriceType})` : ""}</Text>
                     <Text variant="body" color="success" weight="700">{fuelMetrics.minPrice ? formatCOP(fuelMetrics.minPrice) : "--"}</Text>
                   </View>
                   <View style={styles.priceDivider} />
                   <View>
-                    <Text variant="caption" color="gray500">Máximo</Text>
+                    <Text variant="caption" color="gray500">Mayor{fuelMetrics.maxPriceType ? ` (${fuelMetrics.maxPriceType})` : ""}</Text>
                     <Text variant="body" color="danger" weight="700">{fuelMetrics.maxPrice ? formatCOP(fuelMetrics.maxPrice) : "--"}</Text>
                   </View>
                 </View>
@@ -673,27 +692,28 @@ const styles = StyleSheet.create({
   opacityLabel: { opacity: 0.7, marginBottom: 2 },
   allVehiclesContainer: {
     position: "absolute",
-    right: 0,
+    right: 12,
     top: 5,
     flexDirection: "row",
     alignItems: "center",
     height: 80,
   },
   allVehiclesImage: {
-    width: 90,
+    width: 85,
     height: 60,
     resizeMode: "contain",
-    marginLeft: -40,
+    marginLeft: -45,
   },
   moreVehiclesBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: -10,
-    zIndex: 10,
+    marginLeft: -32,
+    zIndex: 99,
+    elevation: 5,
   },
   
   metricsGrid: { flexDirection: "row", gap: Spacing.sm, marginBottom: Spacing.sm },

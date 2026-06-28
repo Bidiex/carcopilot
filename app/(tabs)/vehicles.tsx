@@ -9,6 +9,7 @@ import {
   Modal,
   FlatList,
   Dimensions,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -39,6 +40,7 @@ export default function VehiclesScreen() {
   // Edit Model State
   const { showAlert } = useAlert();
   const [editingVehicle, setEditingVehicle] = useState<any>(null);
+  const [deletingVehicle, setDeletingVehicle] = useState<any>(null);
   const [selectedModelId, setSelectedModelId] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [savingModel, setSavingModel] = useState(false);
@@ -132,6 +134,26 @@ export default function VehiclesScreen() {
       showAlert("Error", "No se pudo actualizar el modelo: " + e.message, [], "error");
     } finally {
       setSavingModel(false);
+    }
+  };
+
+  const handleDeleteVehicleRequest = (vehicle: any) => {
+    setDeletingVehicle(vehicle);
+  };
+
+  const confirmDeleteVehicle = async () => {
+    if (!deletingVehicle) return;
+    setLoading(true);
+    const vehicleId = deletingVehicle.id;
+    setDeletingVehicle(null);
+    try {
+      const { error } = await supabase.from("vehicles").delete().eq("id", vehicleId);
+      if (error) throw error;
+      showAlert("Vehículo Eliminado", "El vehículo ha sido eliminado correctamente.", [], "success");
+      fetchVehicles();
+    } catch (e: any) {
+      showAlert("Error", "No se pudo eliminar el vehículo: " + e.message, [], "error");
+      setLoading(false);
     }
   };
 
@@ -241,6 +263,12 @@ export default function VehiclesScreen() {
                     )}
                   </View>
                 </View>
+                <TouchableOpacity activeOpacity={0.7} 
+                  style={styles.deleteVehicleButton}
+                  onPress={() => handleDeleteVehicleRequest(vehicle)}
+                >
+                  <Ionicons name="trash" size={16} color={Colors.white} />
+                </TouchableOpacity>
                 <TouchableOpacity activeOpacity={0.7} 
                   style={styles.editModelButton}
                   onPress={() => openEditModal(vehicle)}
@@ -366,6 +394,42 @@ export default function VehiclesScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={!!deletingVehicle}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setDeletingVehicle(null)}
+      >
+        <View style={styles.modalOverlayCentered}>
+          <View style={styles.alertModalContent}>
+            <View style={styles.alertIconContainer}>
+              <Ionicons name="warning" size={32} color={Colors.danger} />
+            </View>
+            <Text variant="heading2" color="gray900" weight="700" align="center" style={{ marginBottom: Spacing.sm }}>
+              Eliminar Vehículo
+            </Text>
+            <Text variant="body" color="gray600" align="center" style={{ marginBottom: Spacing.xl }}>
+              ¿Estás seguro de que deseas eliminar {deletingVehicle?.custom_brand} {deletingVehicle?.custom_model}? Esta acción es irreversible y borrará todo el historial asociado.
+            </Text>
+            <View style={styles.alertActions}>
+              <Button
+                title="Cancelar"
+                variant="secondary"
+                onPress={() => setDeletingVehicle(null)}
+                style={{ flex: 1, marginRight: Spacing.sm }}
+              />
+              <Button
+                title="Eliminar"
+                onPress={confirmDeleteVehicle}
+                style={{ flex: 1, backgroundColor: Colors.danger }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <UpgradeModal
         visible={showUpgradeModal}
         onClose={closeUpgradeModal}
@@ -485,6 +549,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     ...Shadows.card,
   },
+  deleteVehicleButton: {
+    position: "absolute",
+    right: Spacing.md + 36,
+    top: Spacing.md,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.danger,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Shadows.card,
+  },
   emptyCard: {
     padding: Spacing.xxl,
     alignItems: "center",
@@ -599,5 +675,34 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     width: "100%",
+  },
+  modalOverlayCentered: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Layout.screenPadding,
+  },
+  alertModalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    width: "100%",
+    alignItems: "center",
+    ...Shadows.floating,
+  },
+  alertIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(255,77,79,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.md,
+  },
+  alertActions: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-between",
   },
 });

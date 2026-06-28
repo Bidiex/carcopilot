@@ -40,12 +40,13 @@ export const Button: React.FC<CustomButtonProps> = ({
   const buttonStyles = [
     styles.baseButton,
     styles[`${variant}Button` as const],
-    isButtonDisabled && styles.disabledButton,
+    disabled && !loading && styles.disabledButton,
+    loading && { opacity: 0.7 },
     style,
   ];
 
   const getTextColor = (): keyof typeof Colors => {
-    if (disabled) return "gray400";
+    if (disabled && !loading) return "gray400";
     if (variant === "primary") return "white";
     if (variant === "ghost") return "primary500";
     return "primary500";
