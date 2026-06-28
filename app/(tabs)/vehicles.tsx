@@ -10,6 +10,7 @@ import {
   FlatList,
   Dimensions,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -19,7 +20,7 @@ import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { VEHICLE_IMAGES, VEHICLE_MODELS, CAR_COLORS } from "@/constants/vehicles";
+import { VEHICLE_IMAGES, VEHICLE_MODELS, CAR_COLORS, BIKE_IMAGES, BIKE_MODELS, BIKE_COLORS } from "@/constants/vehicles";
 import { useAlert } from "@/context/AlertContext";
 import { useActionGuard } from "@/hooks/useActionGuard";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -100,8 +101,9 @@ export default function VehiclesScreen() {
       setSelectedModelId(modelId);
       setSelectedColor(color);
     } else {
-      setSelectedModelId(VEHICLE_MODELS[0].id);
-      setSelectedColor(VEHICLE_MODELS[0].colors[0]);
+      const models = vehicle.type === "moto" ? BIKE_MODELS : VEHICLE_MODELS;
+      setSelectedModelId(models[0].id);
+      setSelectedColor(models[0].colors[0]);
     }
   };
 
@@ -227,14 +229,14 @@ export default function VehiclesScreen() {
 
                   {/* 3D Model Image */}
                   <View style={styles.imageContainer}>
-                    {vehicle.model_image && VEHICLE_IMAGES[vehicle.model_image] ? (
+                    {vehicle.model_image && (vehicle.type === "moto" ? BIKE_IMAGES[vehicle.model_image] : VEHICLE_IMAGES[vehicle.model_image]) ? (
                       <Image
-                        source={VEHICLE_IMAGES[vehicle.model_image]}
+                        source={vehicle.type === "moto" ? BIKE_IMAGES[vehicle.model_image] : VEHICLE_IMAGES[vehicle.model_image]}
                         style={styles.vehicleImage}
                       />
                     ) : (
                       <View style={styles.placeholderIcon}>
-                        <Ionicons name="car" size={40} color={Colors.gray300} />
+                        <Ionicons name={vehicle.type === "moto" ? "bicycle" : "car"} size={40} color={Colors.gray300} />
                       </View>
                     )}
                   </View>
@@ -287,7 +289,7 @@ export default function VehiclesScreen() {
 
             <View style={styles.carouselWrapper}>
               <FlatList
-                data={VEHICLE_MODELS}
+                data={editingVehicle?.type === "moto" ? BIKE_MODELS : VEHICLE_MODELS}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 snapToInterval={width * 0.7 + Spacing.md}
@@ -311,7 +313,7 @@ export default function VehiclesScreen() {
                       }}
                     >
                       <View style={styles.carouselImageContainer}>
-                        <Image source={VEHICLE_IMAGES[imageKey]} style={styles.carouselImage} />
+                        <Image source={editingVehicle?.type === "moto" ? BIKE_IMAGES[imageKey] : VEHICLE_IMAGES[imageKey]} style={styles.carouselImage} />
                       </View>
                       <Text variant="body" color={isSelected ? "primary500" : "gray700"} weight={isSelected ? "700" : "600"} align="center" style={styles.carouselModelName}>
                         {item.name}
@@ -323,14 +325,24 @@ export default function VehiclesScreen() {
                             key={color}
                             style={[
                               styles.colorDot,
-                              { backgroundColor: CAR_COLORS[color as keyof typeof CAR_COLORS] },
-                              (isSelected && selectedColor === color) && styles.colorDotSelected
+                              color !== "wrapper" && { backgroundColor: editingVehicle?.type === "moto" ? BIKE_COLORS[color as keyof typeof BIKE_COLORS] : CAR_COLORS[color as keyof typeof CAR_COLORS] },
+                              (isSelected && selectedColor === color) && styles.colorDotSelected,
+                              color === "wrapper" && { overflow: "hidden", borderWidth: 0 }
                             ]}
                             onPress={() => {
                               setSelectedModelId(item.id);
                               setSelectedColor(color);
                             }}
-                          />
+                          >
+                            {color === "wrapper" && (
+                              <LinearGradient
+                                colors={['#EF4444', '#FFFFFF']}
+                                style={StyleSheet.absoluteFill}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                              />
+                            )}
+                          </TouchableOpacity>
                         ))}
                       </View>
                       

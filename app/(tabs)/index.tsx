@@ -22,7 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { VehiclePicker, VehiclePickerPill } from "@/components/VehiclePicker";
 import { QuickActionMenu } from "@/components/QuickActionMenu";
 import { LineChart } from "react-native-gifted-charts";
-import { VEHICLE_IMAGES } from "@/constants/vehicles";
+import { VEHICLE_IMAGES, BIKE_IMAGES } from "@/constants/vehicles";
 import { useActionGuard } from "@/hooks/useActionGuard";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
@@ -400,7 +400,7 @@ export default function HomeScreen() {
                     {vehicles.slice(0, 3).reverse().map((v, i) => v.model_image && (
                       <Image
                         key={v.id}
-                        source={VEHICLE_IMAGES[v.model_image]}
+                        source={v.type === "moto" ? BIKE_IMAGES[v.model_image] : VEHICLE_IMAGES[v.model_image]}
                         style={[styles.allVehiclesImage, { zIndex: i }]}
                       />
                     ))}
@@ -413,7 +413,7 @@ export default function HomeScreen() {
                 ) : (
                   (selectedVehicle?.model_image || activeVehicle?.model_image) && (
                     <Image
-                      source={VEHICLE_IMAGES[selectedVehicle?.model_image || activeVehicle?.model_image]}
+                      source={(selectedVehicle || activeVehicle)?.type === "moto" ? BIKE_IMAGES[(selectedVehicle || activeVehicle)?.model_image] : VEHICLE_IMAGES[(selectedVehicle || activeVehicle)?.model_image]}
                       style={styles.cardCarOverlay}
                     />
                   )

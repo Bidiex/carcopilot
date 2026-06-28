@@ -21,7 +21,7 @@ const ALL_TOOLS = [
         tanque_lleno: { type: 'BOOLEAN', description: 'Si se llenó el tanque completo' },
         nombre_estacion: { type: 'STRING', description: 'Nombre de la estación de servicio (opcional)' },
       },
-      required: ['vehiculo_id', 'precio_total'],
+      required: ['vehiculo_id', 'precio_total', 'odometro'],
     }
   },
   {
@@ -37,7 +37,7 @@ const ALL_TOOLS = [
         porcentaje_inicial: { type: 'NUMBER', description: 'Porcentaje de batería al iniciar la carga' },
         porcentaje_final: { type: 'NUMBER', description: 'Porcentaje de batería al terminar' },
       },
-      required: ['vehiculo_id', 'costo_total'],
+      required: ['vehiculo_id', 'costo_total', 'kwh_cargados', 'odometro'],
     }
   },
   {
@@ -51,9 +51,9 @@ const ALL_TOOLS = [
         costo: { type: 'NUMBER', description: 'Costo total en COP' },
         odometro: { type: 'NUMBER', description: 'Lectura del odómetro al momento del mantenimiento' },
         taller: { type: 'STRING', description: 'Nombre del taller o lugar donde se realizó (opcional)' },
-        tipo: { type: 'STRING', description: 'Tipo: aceite, frenos, llantas, bateria, otro' },
+        tipo: { type: 'STRING', description: 'Tipo o ID de la categoría (revisa el listado de categorías en las instrucciones del sistema dependiendo si es carro o moto)' },
       },
-      required: ['vehiculo_id', 'descripcion', 'costo'],
+      required: ['vehiculo_id', 'descripcion', 'costo', 'odometro', 'tipo'],
     }
   },
   {
@@ -178,6 +178,21 @@ const ALL_TOOLS = [
 ];
 
 function buildSystemPrompt(userContext: any) {
+  const activeVehicle = userContext.vehicles?.find((v: any) => v.id === userContext.activeVehicleId);
+  const isMoto = activeVehicle?.type === 'moto';
+
+  const categoryContext = isMoto ? `
+CATEGORÍAS DE MANTENIMIENTO (MOTO):
+El vehículo activo es una motocicleta. Al registrar un mantenimiento, debes clasificarlo (parámetro 'tipo') usando EXACTAMENTE uno de estos IDs:
+moto_motor, moto_lubricacion, moto_refrigeracion, moto_combustible, moto_admision, moto_encendido, moto_escape, moto_caja_embrague, moto_transmision, moto_suspension_delantera, moto_suspension_trasera, moto_direccion, moto_frenos, moto_ruedas, moto_electrico, moto_iluminacion, moto_instrumentacion, moto_controles, moto_chasis, moto_seguridad, moto_accesorios, moto_electrica, moto_general, otros.
+Si dudas, pregúntale al usuario a qué categoría pertenece.
+` : `
+CATEGORÍAS DE MANTENIMIENTO (CARRO):
+El vehículo activo es un automóvil. Al registrar un mantenimiento, debes clasificarlo (parámetro 'tipo') usando EXACTAMENTE uno de estos IDs:
+motor_internos, admision_aire, sistema_combustible, sistema_encendido, sistema_lubricacion, sistema_refrigeracion, escape_emisiones, transmision, traccion_ejes, suspension, direccion, frenos, ruedas, electrico, iluminacion, carroceria, vidrios_espejos, interior, aire_acondicionado, seguridad, acceso, conectividad, hibridos_electricos, accesorios, otros.
+Si dudas, pregúntale al usuario a qué categoría pertenece.
+`;
+
   return `
 Eres CarCopilot, un asistente financiero experto en vehículos. Tu objetivo es ayudar al usuario a registrar gastos, entender su consumo y anticipar mantenimientos o pagos legales en Colombia.
 
@@ -197,11 +212,14 @@ VEHÍCULOS DEL USUARIO: ${JSON.stringify(userContext.vehicles)}
 VEHÍCULO ACTIVO ACTUALMENTE: ${userContext.activeVehicleId}
 FECHA ACTUAL: ${userContext.currentDate}
 
+${categoryContext}
+
 REGLAS DE OPERACIÓN:
 1. Si el usuario te dicta un gasto, usa la herramienta correspondiente para guardarlo. No asumas datos críticos.
 2. Si el usuario hace una consulta, responde brevemente con los datos obtenidos.
 3. Mantén tus respuestas habladas por debajo de las 30 palabras. Eres un copiloto rápido.
 4. NUNCA respondas con bloques de código (Markdown). Responde solo con lenguaje natural que pueda ser leído en voz alta (texto plano).
+5. REGLA CRÍTICA: Si el usuario no provee uno o más de los parámetros requeridos para una herramienta (como odómetro, galones, kWh o tipo), NO asumas los valores ni llames a la herramienta con valores nulos. DEBES responder haciendo las preguntas necesarias para obtener la información faltante, y NO invoques la herramienta hasta tener todos los datos requeridos.
 `;
 }
 

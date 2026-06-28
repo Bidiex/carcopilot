@@ -11,7 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/Typography";
 import { Colors, Spacing, Radius, Shadows } from "@/constants/theme";
-import { VEHICLE_IMAGES } from "@/constants/vehicles";
+import { VEHICLE_IMAGES, BIKE_IMAGES } from "@/constants/vehicles";
 
 interface Vehicle {
   id: string;
@@ -20,6 +20,7 @@ interface Vehicle {
   plate?: string;
   propulsion?: string;
   model_image?: string;
+  type?: string;
 }
 
 interface VehiclePickerProps {
@@ -127,9 +128,9 @@ export const VehiclePicker: React.FC<VehiclePickerProps> = ({
                           item.model_image && { backgroundColor: "transparent" }
                         ]}
                       >
-                        {item.model_image && VEHICLE_IMAGES[item.model_image] ? (
+                        {item.model_image && (item.type === "moto" ? BIKE_IMAGES[item.model_image] : VEHICLE_IMAGES[item.model_image]) ? (
                           <Image
-                            source={VEHICLE_IMAGES[item.model_image]}
+                            source={item.type === "moto" ? BIKE_IMAGES[item.model_image] : VEHICLE_IMAGES[item.model_image]}
                             style={{ width: 44, height: 30, resizeMode: "contain" }}
                           />
                         ) : (
@@ -209,9 +210,9 @@ export const VehiclePickerPill: React.FC<VehiclePickerPillProps> = ({
       style={[styles.pill, isLight && { backgroundColor: "rgba(255,255,255,0.2)" }]} 
       onPress={onPress}
     >
-      {selected?.model_image && VEHICLE_IMAGES[selected.model_image] ? (
+      {selected?.model_image && (selected.type === "moto" ? BIKE_IMAGES[selected.model_image] : VEHICLE_IMAGES[selected.model_image]) ? (
         <Image 
-          source={VEHICLE_IMAGES[selected.model_image]} 
+          source={selected.type === "moto" ? BIKE_IMAGES[selected.model_image] : VEHICLE_IMAGES[selected.model_image]} 
           style={{ width: 32, height: 20, resizeMode: "contain" }} 
         />
       ) : (

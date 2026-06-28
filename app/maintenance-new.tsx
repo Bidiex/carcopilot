@@ -23,7 +23,7 @@ import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
 import { checkChronologyBreak } from "@/lib/chronology";
-import { MAINTENANCE_CATEGORIES } from "@/constants/maintenance";
+import { MAINTENANCE_CATEGORIES, MOTO_MAINTENANCE_CATEGORIES } from "@/constants/maintenance";
 import { useActionGuard } from "@/hooks/useActionGuard";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
@@ -226,7 +226,7 @@ export default function MaintenanceNewScreen() {
             label="Categoría *"
             placeholder="Seleccionar categoría..."
             value={category}
-            options={MAINTENANCE_CATEGORIES.map(c => ({ label: c.name, value: c.id }))}
+            options={(activeVehicle?.type === 'moto' ? MOTO_MAINTENANCE_CATEGORIES : MAINTENANCE_CATEGORIES).map(c => ({ label: c.name, value: c.id }))}
             onSelect={(val) => {
               setCategory(val);
               setItem("");
@@ -240,7 +240,7 @@ export default function MaintenanceNewScreen() {
             value={item}
             options={
               category
-                ? MAINTENANCE_CATEGORIES.find(c => c.id === category)?.items.map(i => ({ label: i, value: i })) || []
+                ? (activeVehicle?.type === 'moto' ? MOTO_MAINTENANCE_CATEGORIES : MAINTENANCE_CATEGORIES).find(c => c.id === category)?.items.map(i => ({ label: i, value: i })) || []
                 : []
             }
             onSelect={setItem}

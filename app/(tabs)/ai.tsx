@@ -12,9 +12,9 @@ import * as FileSystem from 'expo-file-system';
 import { processUserMessage, ConversationMessage, UserContext } from '@/lib/ai';
 
 const REQUIRED_PARAMS: Record<string, string[]> = {
-  registrar_gasolina: ['vehiculo_id', 'precio_total'],
-  registrar_carga_electrica: ['vehiculo_id', 'costo_total'],
-  registrar_mantenimiento: ['vehiculo_id', 'descripcion', 'costo'],
+  registrar_gasolina: ['vehiculo_id', 'precio_total', 'odometro'],
+  registrar_carga_electrica: ['vehiculo_id', 'costo_total', 'kwh_cargados', 'odometro'],
+  registrar_mantenimiento: ['vehiculo_id', 'descripcion', 'costo', 'odometro', 'tipo'],
   registrar_soat: ['vehiculo_id', 'valor_pagado', 'fecha_pago'],
   registrar_tecnomecanica: ['vehiculo_id', 'valor_pagado', 'fecha_revision'],
   registrar_impuesto: ['vehiculo_id', 'valor_pagado', 'anio_gravable', 'fecha_pago'],
@@ -243,15 +243,69 @@ export default function AIScreen() {
 
                     try {
                       if (fnName === 'registrar_gasolina') {
-                          const { error } = await supabase.from('fuel_logs').insert({
+                          const galones = args.galones ?? (
+                            args.precio_total && args.precio_por_galon 
+                              ? args.precio_total / args.precio_por_galon 
+                              : null
+                          );
+
+                          if (!galones) {
+                            aiTextResponse = 'Para registrar el tanqueo necesito saber cuántos galones cargaste o el precio por galón. ¿Cuánto costó el galón?';
+                            break;
+                          }
+
+                          const precioPorGalon = args.precio_por_galon ?? (
+                            galones && args.precio_total 
+                              ? args.precio_total / galones 
+                              : null
+                          );
+
+                          let finalOdometer = args.odometro;
+                          if (finalOdometer === undefined || finalOdometer === null) {
+                            const { data: lastLog } = await supabase
+                              .from('fuel_logs')
+                              .select('odometer')
+                              .eq('vehicle_id', vehiculo_id)
+                              .order('date', { ascending: false })
+                              .limit(1);
+                            
+                            if (lastLog && lastLog.length > 0 && lastLog[0].odometer != null) {
+                              finalOdometer = lastLog[0].odometer;
+                            } else {
+                              const { data: vehicleData } = await supabase
+                                .from('vehicles')
+                                .select('current_mileage')
+                                .eq('id', vehiculo_id)
+                                .single();
+                              finalOdometer = vehicleData?.current_mileage ?? 0;
+                            }
+                          }
+
+                          const insertData = {
                               user_id: session?.user.id,
                               vehicle_id: vehiculo_id,
                               date: new Date().toISOString().split('T')[0],
-                              odometer: args.odometro,
-                              gallons: args.galones,
+                              odometer: finalOdometer,
+                              gallons: galones,
                               amount_cop: args.precio_total,
-                              full_tank: args.tanque_lleno
-                          });
+                              full_tank: args.tanque_lleno,
+                              price_per_gallon: precioPorGalon
+                          };
+
+                          const missing = [];
+                          if (!insertData.vehicle_id) missing.push('vehículo');
+                          if (!insertData.user_id) missing.push('usuario');
+                          if (!insertData.date) missing.push('fecha');
+                          if (insertData.odometer === null || insertData.odometer === undefined) missing.push('odómetro');
+                          if (!insertData.gallons) missing.push('galones');
+                          if (!insertData.amount_cop) missing.push('precio total');
+
+                          if (missing.length > 0) {
+                              aiTextResponse = `No puedo registrar el tanqueo porque me falta esta información: ${missing.join(', ')}.`;
+                              break;
+                          }
+
+                          const { error } = await supabase.from('fuel_logs').insert(insertData);
                           if (error) throw error;
                           aiTextResponse = `Listo, he registrado el tanqueo por ${args.precio_total} pesos.`;
                       } else if (fnName === 'registrar_carga_electrica') {
@@ -260,42 +314,57 @@ export default function AIScreen() {
                               vehicle_id: vehiculo_id,
                               date: new Date().toISOString().split('T')[0],
                               odometer: args.odometro,
-                              kwh: args.kwh_cargados,
+                              kwh_charged: args.kwh_cargados,
                               amount_cop: args.costo_total,
-                              start_percentage: args.porcentaje_inicial,
-                              end_percentage: args.porcentaje_final
+                              battery_pct_start: args.porcentaje_inicial,
+                              battery_pct_end: args.porcentaje_final
                           });
                           if (error) throw error;
                           aiTextResponse = `Listo, he registrado la carga eléctrica por ${args.costo_total} pesos.`;
                       } else if (fnName === 'registrar_mantenimiento') {
+                          const finalDescription = args.taller ? `${args.descripcion} (Taller: ${args.taller})` : args.descripcion;
                           const { error } = await supabase.from('maintenance_logs').insert({
                               user_id: session?.user.id,
                               vehicle_id: vehiculo_id,
                               date: new Date().toISOString().split('T')[0],
                               odometer: args.odometro,
-                              description: args.descripcion,
+                              description: finalDescription,
                               amount_cop: args.costo,
-                              type: args.tipo,
-                              workshop: args.taller
+                              type: args.tipo
                           });
                           if (error) throw error;
                           aiTextResponse = `Mantenimiento registrado correctamente por ${args.costo} pesos.`;
                       } else if (fnName === 'registrar_soat' || fnName === 'registrar_tecnomecanica' || fnName === 'registrar_impuesto') {
                           let type = 'soat';
-                          if (fnName === 'registrar_tecnomecanica') type = 'tecnomecanica';
-                          if (fnName === 'registrar_impuesto') type = 'impuesto';
+                          if (fnName === 'registrar_tecnomecanica') type = 'tech_inspection';
+                          if (fnName === 'registrar_impuesto') type = 'tax';
                           
+                          let provider = args.aseguradora || args.cda || null;
+                          let tax_department = args.departamento || null;
+                          
+                          const issueStr = args.fecha_pago || args.fecha_revision;
+                          let expiryStr = issueStr;
+                          try {
+                              const issue = new Date(issueStr);
+                              if (!isNaN(issue.getTime())) {
+                                  issue.setFullYear(issue.getFullYear() + 1);
+                                  expiryStr = issue.toISOString().split('T')[0];
+                              }
+                          } catch(e) {}
+
                           const { error } = await supabase.from('annual_records').insert({
                               user_id: session?.user.id,
                               vehicle_id: vehiculo_id,
                               type: type,
-                              date: args.fecha_pago || args.fecha_revision,
+                              issue_date: issueStr,
+                              expiry_date: expiryStr,
                               amount_cop: args.valor_pagado,
-                              year: args.anio_gravable || new Date().getFullYear(),
-                              details: args.aseguradora || args.cda || args.departamento
+                              tax_year: args.anio_gravable || (type === 'tax' ? new Date().getFullYear() : null),
+                              provider: provider,
+                              tax_department: tax_department
                           });
                           if (error) throw error;
-                          aiTextResponse = `Registro de ${type} guardado por ${args.valor_pagado} pesos.`;
+                          aiTextResponse = `Registro de ${type === 'tech_inspection' ? 'tecnomecánica' : type} guardado por ${args.valor_pagado} pesos.`;
                       } else if (fnName === 'registrar_otro_gasto') {
                           const { error } = await supabase.from('other_expenses').insert({
                               user_id: session?.user.id,

@@ -11,6 +11,7 @@ import {
   Animated,
   FlatList,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
@@ -24,7 +25,7 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { VEHICLE_MODELS, VEHICLE_IMAGES, CAR_COLORS } from "@/constants/vehicles";
+import { VEHICLE_MODELS, VEHICLE_IMAGES, CAR_COLORS, BIKE_MODELS, BIKE_IMAGES, BIKE_COLORS } from "@/constants/vehicles";
 import { useActionGuard } from "@/hooks/useActionGuard";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
@@ -160,6 +161,20 @@ export default function VehicleNewScreen() {
       animateSelection(propulsion);
     }
   }, [step, vehicleType, propulsion]);
+
+  // Reset model and color when switching vehicle type
+  useEffect(() => {
+    if (vehicleType === "car") {
+      setSelectedModelId(VEHICLE_MODELS[0].id);
+      setSelectedColor(VEHICLE_MODELS[0].colors[0]);
+    } else {
+      setSelectedModelId(BIKE_MODELS[0].id);
+      setSelectedColor(BIKE_MODELS[0].colors[0]);
+      if (fuelType === "diesel") {
+        setFuelType("gasoline");
+      }
+    }
+  }, [vehicleType]);
 
   const validateStep2 = () => {
     let isValid = true;
@@ -539,7 +554,7 @@ export default function VehicleNewScreen() {
                       label="Tipo de Combustible *"
                       placeholder="Seleccionar tipo de combustible"
                       value={fuelType}
-                      options={FUEL_TYPES}
+                      options={vehicleType === "moto" ? FUEL_TYPES.filter(f => f.value !== "diesel") : FUEL_TYPES}
                       onSelect={(val) => {
                         setFuelType(val);
                         if (val === "diesel") {
@@ -603,7 +618,7 @@ export default function VehicleNewScreen() {
 
               <View style={styles.carouselWrapper}>
                 <FlatList
-                  data={VEHICLE_MODELS}
+                  data={vehicleType === "car" ? VEHICLE_MODELS : BIKE_MODELS}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   snapToInterval={width * 0.8 + Spacing.md}
@@ -614,6 +629,9 @@ export default function VehicleNewScreen() {
                     const isSelected = selectedModelId === item.id;
                     const currentColor = isSelected ? selectedColor : item.colors[0];
                     const imageKey = `${item.id}_${currentColor}.webp`;
+                    
+                    const sourceImage = vehicleType === "car" ? VEHICLE_IMAGES[imageKey] : BIKE_IMAGES[imageKey];
+                    const colorsSource = vehicleType === "car" ? CAR_COLORS : BIKE_COLORS;
 
                     return (
                       <TouchableOpacity
@@ -627,7 +645,7 @@ export default function VehicleNewScreen() {
                         }}
                       >
                         <View style={styles.carouselImageContainer}>
-                          <Image source={VEHICLE_IMAGES[imageKey]} style={styles.carouselImage} />
+                          <Image source={sourceImage} style={styles.carouselImage} />
                         </View>
                         <Text variant="heading2" color={isSelected ? "primary500" : "gray700"} weight={isSelected ? "700" : "600"} align="center" style={styles.carouselModelName}>
                           {item.name}
@@ -639,14 +657,24 @@ export default function VehicleNewScreen() {
                               key={color}
                               style={[
                                 styles.colorDot,
-                                { backgroundColor: CAR_COLORS[color] },
-                                (isSelected && selectedColor === color) && styles.colorDotSelected
+                                color !== "wrapper" && { backgroundColor: colorsSource[color as keyof typeof colorsSource] },
+                                (isSelected && selectedColor === color) && styles.colorDotSelected,
+                                color === "wrapper" && { overflow: "hidden", borderWidth: 0 }
                               ]}
                               onPress={() => {
                                 setSelectedModelId(item.id);
                                 setSelectedColor(color);
                               }}
-                            />
+                            >
+                              {color === "wrapper" && (
+                                <LinearGradient
+                                  colors={['#EF4444', '#FFFFFF']}
+                                  style={StyleSheet.absoluteFill}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 1 }}
+                                />
+                              )}
+                            </TouchableOpacity>
                           ))}
                         </View>
                         

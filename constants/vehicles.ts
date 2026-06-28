@@ -104,3 +104,67 @@ export const VEHICLE_MODELS = [
     defaultImage: "suv_grey.webp"
   }
 ];
+
+export const BIKE_IMAGES: { [key: string]: any } = {
+  "citybike_black.webp": require("@/assets/bikes/citybike_black.webp"),
+  "citybike_blue.webp": require("@/assets/bikes/citybike_blue.webp"),
+  "citybike_grey.webp": require("@/assets/bikes/citybike_grey.webp"),
+  "citybike_red.webp": require("@/assets/bikes/citybike_red.webp"),
+  "ebike_black.webp": require("@/assets/bikes/ebike_black.webp"),
+  "ebike_red.webp": require("@/assets/bikes/ebike_red.webp"),
+  "ebike_yellow.webp": require("@/assets/bikes/ebike_yellow.webp"),
+  "naked_green.webp": require("@/assets/bikes/naked_green.webp"),
+  "naked_orange.webp": require("@/assets/bikes/naked_orange.webp"),
+  "naked_red.webp": require("@/assets/bikes/naked_red.webp"),
+  "sport_orange.webp": require("@/assets/bikes/sport_orange.webp"),
+  "sport_white.webp": require("@/assets/bikes/sport_white.webp"),
+  "superbike_black.webp": require("@/assets/bikes/superbike_black.webp"),
+  "superbike_red.webp": require("@/assets/bikes/superbike_red.webp"),
+  "superbike_white.webp": require("@/assets/bikes/superbike_white.webp"),
+  "superbike_wrapper.webp": require("@/assets/bikes/superbike_wrapper.webp"),
+};
+
+export const BIKE_COLORS: { [key: string]: string } = {
+  black: "#1A1A1A",
+  blue: "#3B82F6",
+  grey: "#6B7280",
+  red: "#EF4444",
+  yellow: "#FBBF24",
+  green: "#22C55E",
+  orange: "#F97316",
+  white: "#E5E7EB",
+  wrapper: "#8B5CF6",
+};
+
+export const BIKE_MODELS = [
+  {
+    id: "citybike",
+    name: "Moto de Ciudad",
+    colors: ["black", "blue", "grey", "red"],
+    defaultImage: "citybike_black.webp"
+  },
+  {
+    id: "ebike",
+    name: "Moto Eléctrica",
+    colors: ["black", "red", "yellow"],
+    defaultImage: "ebike_black.webp"
+  },
+  {
+    id: "naked",
+    name: "Naked",
+    colors: ["green", "orange", "red"],
+    defaultImage: "naked_red.webp"
+  },
+  {
+    id: "sport",
+    name: "Deportiva",
+    colors: ["orange", "white"],
+    defaultImage: "sport_white.webp"
+  },
+  {
+    id: "superbike",
+    name: "Superbike",
+    colors: ["black", "red", "white", "wrapper"],
+    defaultImage: "superbike_red.webp"
+  }
+];

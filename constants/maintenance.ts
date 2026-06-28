@@ -552,8 +552,447 @@ export const MAINTENANCE_CATEGORIES: MaintenanceCategory[] = [
   },
 ];
 
-export const getCategoryByItem = (item: string): string | null => {
-  for (const cat of MAINTENANCE_CATEGORIES) {
+export const MOTO_MAINTENANCE_CATEGORIES: MaintenanceCategory[] = [
+  {
+    id: "moto_motor",
+    name: "1. Motor",
+    items: [
+      "Bloque del motor",
+      "Culata",
+      "Junta de culata",
+      "Pistón",
+      "Anillos de pistón",
+      "Biela",
+      "Cigüeñal",
+      "Árbol de levas",
+      "Válvulas de admisión",
+      "Válvulas de escape",
+      "Resortes de válvulas",
+      "Balancines",
+      "Cadena de distribución",
+      "Tensor de distribución",
+      "Guías de cadena",
+      "Tapa de válvulas",
+      "Cárter",
+      "Empaques",
+      "Retenes",
+      "Soportes del motor",
+      "Volante magnético",
+      "Magneto"
+    ]
+  },
+  {
+    id: "moto_lubricacion",
+    name: "2. Sistema de lubricación",
+    items: [
+      "Aceite del motor",
+      "Filtro de aceite",
+      "Colador de aceite",
+      "Bomba de aceite",
+      "Radiador de aceite",
+      "Sensor de presión de aceite",
+      "Tapón de drenaje",
+      "Varilla medidora",
+      "Mirilla de aceite"
+    ]
+  },
+  {
+    id: "moto_refrigeracion",
+    name: "3. Sistema de refrigeración",
+    items: [
+      "Radiador",
+      "Bomba de agua",
+      "Termostato",
+      "Electroventilador",
+      "Mangueras",
+      "Depósito de expansión",
+      "Refrigerante",
+      "Sensor de temperatura",
+      "Tapa del radiador"
+    ]
+  },
+  {
+    id: "moto_combustible",
+    name: "4. Sistema de combustible",
+    items: [
+      "Tanque",
+      "Tapa del tanque",
+      "Llave de gasolina",
+      "Bomba de combustible",
+      "Filtro de gasolina",
+      "Mangueras",
+      "Inyectores",
+      "Cuerpo de aceleración",
+      "Carburador",
+      "Chicler principal",
+      "Chicler de baja",
+      "Flotador",
+      "Aguja del carburador",
+      "Sensor de nivel",
+      "Sensor de presión",
+      "Regulador de presión"
+    ]
+  },
+  {
+    id: "moto_admision",
+    name: "5. Sistema de admisión",
+    items: [
+      "Filtro de aire",
+      "Caja del filtro",
+      "Conductos de admisión",
+      "Múltiple de admisión",
+      "Sensor MAP",
+      "Sensor MAF",
+      "Sensor IAT",
+      "Cuerpo de aceleración",
+      "Válvula ISC"
+    ]
+  },
+  {
+    id: "moto_encendido",
+    name: "6. Sistema de encendido",
+    items: [
+      "Batería",
+      "Bobina de encendido",
+      "Bujía",
+      "Capuchón de bujía",
+      "CDI",
+      "ECU",
+      "Estator",
+      "Regulador/rectificador",
+      "Sensor CKP",
+      "Interruptor de encendido",
+      "Interruptor de paro"
+    ]
+  },
+  {
+    id: "moto_escape",
+    name: "7. Sistema de escape",
+    items: [
+      "Múltiple",
+      "Empaque del escape",
+      "Tubo de escape",
+      "Silenciador",
+      "Catalizador",
+      "Protector térmico",
+      "Sensor de oxígeno",
+      "Válvula de escape"
+    ]
+  },
+  {
+    id: "moto_caja_embrague",
+    name: "8. Caja de cambios y embrague",
+    items: [
+      "Caja de cambios",
+      "Selector de cambios",
+      "Horquilla selectora",
+      "Tambor selector",
+      "Engranajes",
+      "Eje primario",
+      "Eje secundario",
+      "Embrague",
+      "Discos de embrague",
+      "Discos separadores",
+      "Campana de embrague",
+      "Prensa de embrague",
+      "Cable de embrague",
+      "Cilindro maestro hidráulico",
+      "Cilindro esclavo"
+    ]
+  },
+  {
+    id: "moto_transmision",
+    name: "9. Transmisión final",
+    items: [
+      "Cadena",
+      "Piñón delantero",
+      "Catalina",
+      "Tensor de cadena",
+      "Guía de cadena",
+      "Protector de cadena",
+      "Correa",
+      "Polea delantera",
+      "Polea trasera",
+      "Cardán",
+      "Eje cardán",
+      "Crucetas",
+      "Caja del cardán"
+    ]
+  },
+  {
+    id: "moto_suspension_delantera",
+    name: "10. Suspensión delantera",
+    items: [
+      "Barras telescópicas",
+      "Horquilla invertida",
+      "Tubos internos",
+      "Barras externas",
+      "Retenes",
+      "Guardapolvos",
+      "Aceite de suspensión",
+      "Tapas superiores",
+      "Resortes",
+      "Casquillos"
+    ]
+  },
+  {
+    id: "moto_suspension_trasera",
+    name: "11. Suspensión trasera",
+    items: [
+      "Amortiguador",
+      "Monoamortiguador",
+      "Doble amortiguador",
+      "Resorte",
+      "Bieletas",
+      "Basculante",
+      "Bujes del basculante",
+      "Eje del basculante",
+      "Rodamientos"
+    ]
+  },
+  {
+    id: "moto_direccion",
+    name: "12. Dirección",
+    items: [
+      "Manillar",
+      "Puños",
+      "Contrapesos",
+      "Tija superior",
+      "Tija inferior",
+      "Rodamientos de dirección",
+      "Columna de dirección",
+      "Topes de dirección"
+    ]
+  },
+  {
+    id: "moto_frenos",
+    name: "13. Sistema de frenos",
+    items: [
+      "Disco delantero",
+      "Disco trasero",
+      "Pastillas delanteras",
+      "Pastillas traseras",
+      "Mordaza delantera",
+      "Mordaza trasera",
+      "Bomba de freno delantera",
+      "Bomba de freno trasera",
+      "Depósito de líquido",
+      "Líquido de frenos",
+      "Latiguillos",
+      "Pedal de freno",
+      "Manigueta de freno",
+      "Sensor ABS",
+      "Módulo ABS",
+      "Tambor",
+      "Zapatas"
+    ]
+  },
+  {
+    id: "moto_ruedas",
+    name: "14. Ruedas y neumáticos",
+    items: [
+      "Llanta delantera",
+      "Llanta trasera",
+      "Rin delantero",
+      "Rin trasero",
+      "Radios",
+      "Nipples",
+      "Cubo delantero",
+      "Cubo trasero",
+      "Rodamientos",
+      "Retenes",
+      "Válvulas",
+      "Sensor TPMS"
+    ]
+  },
+  {
+    id: "moto_electrico",
+    name: "15. Sistema eléctrico",
+    items: [
+      "Batería",
+      "Fusibles",
+      "Relés",
+      "Arnés eléctrico",
+      "ECU",
+      "CDI",
+      "Regulador",
+      "Estator",
+      "Alternador",
+      "Cableado",
+      "Tierra eléctrica",
+      "Interruptores",
+      "Conectores"
+    ]
+  },
+  {
+    id: "moto_iluminacion",
+    name: "16. Iluminación",
+    items: [
+      "Faro delantero",
+      "Bombillo LED",
+      "Bombillo halógeno",
+      "Luz alta",
+      "Luz baja",
+      "Luz trasera",
+      "Luz de freno",
+      "Direccionales delanteras",
+      "Direccionales traseras",
+      "Luz de placa",
+      "DRL",
+      "Interruptor de luces"
+    ]
+  },
+  {
+    id: "moto_instrumentacion",
+    name: "17. Instrumentación",
+    items: [
+      "Velocímetro",
+      "Tacómetro",
+      "Pantalla TFT",
+      "Pantalla LCD",
+      "Indicador de combustible",
+      "Indicador de temperatura",
+      "Indicador de marcha",
+      "Indicador ABS",
+      "Indicador FI",
+      "Indicador de batería",
+      "Sensor de velocidad"
+    ]
+  },
+  {
+    id: "moto_controles",
+    name: "18. Controles",
+    items: [
+      "Manigueta de embrague",
+      "Manigueta de freno",
+      "Acelerador",
+      "Cable del acelerador",
+      "Interruptor de arranque",
+      "Interruptor de luces",
+      "Interruptor de direccionales",
+      "Bocina",
+      "Interruptor de paro",
+      "Pedal de cambios",
+      "Pedal de freno",
+      "Pedales del conductor",
+      "Pedales del pasajero"
+    ]
+  },
+  {
+    id: "moto_chasis",
+    name: "19. Chasis y carrocería",
+    items: [
+      "Chasis",
+      "Subchasis",
+      "Tanque",
+      "Tapas laterales",
+      "Guardabarros delantero",
+      "Guardabarros trasero",
+      "Colín",
+      "Asiento",
+      "Asiento del pasajero",
+      "Parrilla",
+      "Quilla",
+      "Protector de motor",
+      "Defensas",
+      "Sliders",
+      "Cubrecadena"
+    ]
+  },
+  {
+    id: "moto_seguridad",
+    name: "20. Sistema de seguridad",
+    items: [
+      "Cerradura de dirección",
+      "Llave",
+      "Llave inteligente",
+      "Inmovilizador",
+      "Alarma",
+      "Rastreador GPS",
+      "ABS",
+      "Control de tracción",
+      "Quickshifter",
+      "Modos de conducción",
+      "Control crucero"
+    ]
+  },
+  {
+    id: "moto_accesorios",
+    name: "21. Accesorios",
+    items: [
+      "Maletas laterales",
+      "Top Case",
+      "Bolsa de tanque",
+      "Soporte para celular",
+      "Puerto USB",
+      "Toma de 12V",
+      "Cámara deportiva",
+      "Defensas",
+      "Cubrepuños",
+      "Parabrisas",
+      "Protector de radiador",
+      "Protector de cárter",
+      "Cubremanos",
+      "Soporte GPS",
+      "Caballete central",
+      "Caballete lateral"
+    ]
+  },
+  {
+    id: "moto_electrica",
+    name: "22. Motocicletas eléctricas",
+    items: [
+      "Motor eléctrico",
+      "Batería de tracción",
+      "Controlador",
+      "Inversor",
+      "Convertidor DC-DC",
+      "Puerto de carga",
+      "Cargador",
+      "Cable de carga",
+      "BMS",
+      "Sensores de batería",
+      "Fusibles de alto voltaje"
+    ]
+  },
+  {
+    id: "moto_general",
+    name: "23. Mantenimiento general",
+    items: [
+      "Cambio de aceite",
+      "Cambio de filtro de aceite",
+      "Cambio de filtro de aire",
+      "Cambio de filtro de combustible",
+      "Cambio de refrigerante",
+      "Cambio de líquido de frenos",
+      "Cambio de aceite de suspensión",
+      "Ajuste de válvulas",
+      "Sincronización",
+      "Limpieza de inyectores",
+      "Limpieza de carburador",
+      "Cambio de bujía",
+      "Cambio de kit de arrastre",
+      "Lubricación de cadena",
+      "Tensado de cadena",
+      "Alineación de ruedas",
+      "Balanceo de ruedas",
+      "Cambio de llantas",
+      "Revisión eléctrica",
+      "Diagnóstico electrónico",
+      "Cambio de batería",
+      "Revisión general",
+      "Lavado técnico",
+      "Pulido",
+      "Detallado",
+      "Inspección pre-viaje",
+      "Inspección técnico-mecánica"
+    ]
+  }
+];
+
+export const getCategoryByItem = (item: string, vehicleType: 'car' | 'moto' = 'car'): string | null => {
+  const categories = vehicleType === 'moto' ? MOTO_MAINTENANCE_CATEGORIES : MAINTENANCE_CATEGORIES;
+  for (const cat of categories) {
     if (cat.items.includes(item)) {
       return cat.id;
     }
