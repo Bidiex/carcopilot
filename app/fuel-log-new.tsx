@@ -196,7 +196,7 @@ export default function FuelLogNewScreen() {
         setGpsMessage("No se pudo obtener la dirección. Intenta de nuevo o ingresa la estación manualmente.");
       }
     } catch (err) {
-      console.error("GPS Error:", err);
+      // console.error("GPS Error:", err);
       setGpsStatus("error");
       setGpsMessage("No se pudo obtener la ubicación. Intenta de nuevo o ingresa la estación manualmente.");
     }
@@ -302,7 +302,7 @@ export default function FuelLogNewScreen() {
             }
           }
         } catch (stError) {
-          console.error("Error processing station:", stError);
+          // console.error("Error processing station:", stError);
           // Fallback, el registro de combustible sigue adelante sin bloquear
         }
       }

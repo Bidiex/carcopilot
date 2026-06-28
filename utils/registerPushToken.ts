@@ -4,15 +4,15 @@ import { Platform } from 'react-native'
 import { supabase } from '@/lib/supabase'
 
 export async function registerPushToken(userId: string): Promise<void> {
-  console.log('[PushToken] Iniciando registro para userId:', userId)
+// console.log('[PushToken] Iniciando registro para userId:', userId)
 
   if (!Device.isDevice) {
-    console.log('[PushToken] No es dispositivo físico, saliendo')
+    // console.log('[PushToken] No es dispositivo físico, saliendo')
     return
   }
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync()
-  console.log('[PushToken] Permiso actual:', existingStatus)
+  // console.log('[PushToken] Permiso actual:', existingStatus)
   
   let finalStatus = existingStatus
 
@@ -21,17 +21,17 @@ export async function registerPushToken(userId: string): Promise<void> {
     finalStatus = status
   }
 
-  console.log('[PushToken] Permiso final:', finalStatus)
+  // console.log('[PushToken] Permiso final:', finalStatus)
   if (finalStatus !== 'granted') {
-    console.log('[PushToken] Permiso denegado, saliendo')
+    // console.log('[PushToken] Permiso denegado, saliendo')
     return
   }
 
-  console.log('[PushToken] Obteniendo token...')
+  // console.log('[PushToken] Obteniendo token...')
   const tokenData = await Notifications.getExpoPushTokenAsync({
     projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
   })
-  console.log('[PushToken] Token obtenido:', tokenData.data)
+  // console.log('[PushToken] Token obtenido:', tokenData.data)
 
   const token = tokenData.data
   const platform = Platform.OS
@@ -51,8 +51,8 @@ export async function registerPushToken(userId: string): Promise<void> {
     )
 
   if (error) {
-    console.log('[PushToken] Error al guardar en Supabase:', error)
+    // console.log('[PushToken] Error al guardar en Supabase:', error)
   } else {
-    console.log('[PushToken] Token guardado exitosamente en Supabase')
+    // console.log('[PushToken] Token guardado exitosamente en Supabase')
   }
 }

@@ -97,7 +97,7 @@ export function useLastOdometer(
 
       setData(maxOdo);
     } catch (err: any) {
-      console.error("Error fetching last odometer:", err);
+      // console.error("Error fetching last odometer:", err);
       setError(err);
     } finally {
       setLoading(false);

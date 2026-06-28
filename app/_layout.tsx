@@ -63,7 +63,7 @@ function RootNavigator() {
             await AsyncStorage.removeItem("temp_onboarding_vehicle");
           }
         } catch (e) {
-          console.error("Error migrating onboarding vehicle:", e);
+          // console.error("Error migrating onboarding vehicle:", e);
         }
       };
 

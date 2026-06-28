@@ -51,7 +51,7 @@ export async function checkChronologyBreak(
 
     return { breaksChronology: false };
   } catch (error) {
-    console.error("Error checking chronology:", error);
+    // console.error("Error checking chronology:", error);
     // En caso de error, preferimos permitir guardar y no bloquear el flujo
     return { breaksChronology: false };
   }

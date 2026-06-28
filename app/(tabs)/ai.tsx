@@ -8,7 +8,26 @@ import { Colors } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
-import { processUserMessage } from '@/lib/ai';
+import * as FileSystem from 'expo-file-system';
+import { processUserMessage, ConversationMessage, UserContext } from '@/lib/ai';
+
+const REQUIRED_PARAMS: Record<string, string[]> = {
+  registrar_gasolina: ['vehiculo_id', 'precio_total'],
+  registrar_carga_electrica: ['vehiculo_id', 'costo_total'],
+  registrar_mantenimiento: ['vehiculo_id', 'descripcion', 'costo'],
+  registrar_soat: ['vehiculo_id', 'valor_pagado', 'fecha_pago'],
+  registrar_tecnomecanica: ['vehiculo_id', 'valor_pagado', 'fecha_revision'],
+  registrar_impuesto: ['vehiculo_id', 'valor_pagado', 'anio_gravable', 'fecha_pago'],
+  registrar_otro_gasto: ['vehiculo_id', 'descripcion', 'monto'],
+  seleccionar_vehiculo: ['vehiculo_id']
+};
+
+function validateFunctionArgs(toolName: string, args: Record<string, any>): string[] {
+  const required = REQUIRED_PARAMS[toolName] ?? [];
+  return required.filter(param => 
+    args[param] === undefined || args[param] === null || args[param] === ''
+  );
+}
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 
@@ -22,6 +41,8 @@ export default function AIScreen() {
   const isSpeakingRef = React.useRef<boolean>(false);
   
   const [feedback, setFeedback] = useState<string>('');
+  const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   
   const { session, planStatus, trialDaysRemaining } = useAuth();
   const trialExpired = planStatus !== 'trial' && planStatus !== 'pro';
@@ -124,7 +145,7 @@ export default function AIScreen() {
         }
       });
     } catch (err) {
-      console.error('Error al iniciar grabación', err);
+      // console.error('Error al iniciar grabación', err);
       setFeedback('Error al acceder al micrófono');
       setState('idle');
     }
@@ -171,22 +192,30 @@ export default function AIScreen() {
             reader.onerror = reject;
             reader.readAsDataURL(blob);
         });
+
+        // Eliminar el archivo temporal por seguridad (principio de mínimo dato)
+        try {
+            await FileSystem.deleteAsync(uri, { idempotent: true });
+        } catch (e) {
+            // Ignorar error al borrar
+        }
         
         // Obtener contexto de vehículos
         const { data: vehicles } = await supabase
             .from('vehicles')
-            .select('id, type, plate, custom_brand, custom_model, is_active')
+            .select('*')
             .eq('user_id', session?.user.id);
         
-        const activeVehicle = vehicles?.find(v => v.is_active) || vehicles?.[0];
+        const activeVehicle = vehicles?.find(v => v.id === selectedVehicleId) || vehicles?.find(v => v.is_active) || vehicles?.[0];
         
-        const context = {
-            vehicles,
-            active_vehicle_id: activeVehicle?.id,
-            trial_expired: trialExpired
+        const userContext: UserContext = {
+            vehicles: vehicles || [],
+            activeVehicleId: activeVehicle?.id,
+            planStatus: planStatus || 'trial',
+            currentDate: new Date().toISOString().split('T')[0]
         };
 
-        const response = await processUserMessage(base64Audio, true, context);
+        const response = await processUserMessage(base64Audio, 'audio/mp4', conversationHistory, userContext);
         
         let aiTextResponse = "";
         let functionCalled = false;
@@ -196,25 +225,123 @@ export default function AIScreen() {
             for (const part of parts) {
                 if (part.functionCall) {
                     functionCalled = true;
-                    if (trialExpired) {
+                    const fnName = part.functionCall.name;
+                    if (trialExpired && !fnName.startsWith('consultar_') && fnName !== 'seleccionar_vehiculo') {
                         aiTextResponse = "Lo siento, tu periodo de prueba ha terminado. No puedo registrar nuevos gastos, solo puedes consultar información.";
                         break;
                     }
                     
-                    const fnName = part.functionCall.name;
                     const args = part.functionCall.args || {};
+                    const missingParams = validateFunctionArgs(fnName, args);
                     
-                    if (fnName === 'registrar_gasolina') {
-                        await supabase.from('fuel_logs').insert({
-                            user_id: session?.user.id,
-                            vehicle_id: args.vehiculo_id || activeVehicle?.id,
-                            date: new Date().toISOString(),
-                            odometer: args.odometro,
-                            gallons: args.galones,
-                            amount_cop: args.precio_total,
-                            full_tank: args.tanque_lleno
-                        });
-                        aiTextResponse = `Listo, he registrado el tanqueo por ${args.precio_total} pesos.`;
+                    if (missingParams.length > 0) {
+                      aiTextResponse = `Para completar esta acción necesito más información. Por favor dime: ${missingParams.join(', ')}.`;
+                      break;
+                    }
+                    
+                    const vehiculo_id = args.vehiculo_id || activeVehicle?.id;
+
+                    try {
+                      if (fnName === 'registrar_gasolina') {
+                          const { error } = await supabase.from('fuel_logs').insert({
+                              user_id: session?.user.id,
+                              vehicle_id: vehiculo_id,
+                              date: new Date().toISOString().split('T')[0],
+                              odometer: args.odometro,
+                              gallons: args.galones,
+                              amount_cop: args.precio_total,
+                              full_tank: args.tanque_lleno
+                          });
+                          if (error) throw error;
+                          aiTextResponse = `Listo, he registrado el tanqueo por ${args.precio_total} pesos.`;
+                      } else if (fnName === 'registrar_carga_electrica') {
+                          const { error } = await supabase.from('electric_charge_logs').insert({
+                              user_id: session?.user.id,
+                              vehicle_id: vehiculo_id,
+                              date: new Date().toISOString().split('T')[0],
+                              odometer: args.odometro,
+                              kwh: args.kwh_cargados,
+                              amount_cop: args.costo_total,
+                              start_percentage: args.porcentaje_inicial,
+                              end_percentage: args.porcentaje_final
+                          });
+                          if (error) throw error;
+                          aiTextResponse = `Listo, he registrado la carga eléctrica por ${args.costo_total} pesos.`;
+                      } else if (fnName === 'registrar_mantenimiento') {
+                          const { error } = await supabase.from('maintenance_logs').insert({
+                              user_id: session?.user.id,
+                              vehicle_id: vehiculo_id,
+                              date: new Date().toISOString().split('T')[0],
+                              odometer: args.odometro,
+                              description: args.descripcion,
+                              amount_cop: args.costo,
+                              type: args.tipo,
+                              workshop: args.taller
+                          });
+                          if (error) throw error;
+                          aiTextResponse = `Mantenimiento registrado correctamente por ${args.costo} pesos.`;
+                      } else if (fnName === 'registrar_soat' || fnName === 'registrar_tecnomecanica' || fnName === 'registrar_impuesto') {
+                          let type = 'soat';
+                          if (fnName === 'registrar_tecnomecanica') type = 'tecnomecanica';
+                          if (fnName === 'registrar_impuesto') type = 'impuesto';
+                          
+                          const { error } = await supabase.from('annual_records').insert({
+                              user_id: session?.user.id,
+                              vehicle_id: vehiculo_id,
+                              type: type,
+                              date: args.fecha_pago || args.fecha_revision,
+                              amount_cop: args.valor_pagado,
+                              year: args.anio_gravable || new Date().getFullYear(),
+                              details: args.aseguradora || args.cda || args.departamento
+                          });
+                          if (error) throw error;
+                          aiTextResponse = `Registro de ${type} guardado por ${args.valor_pagado} pesos.`;
+                      } else if (fnName === 'registrar_otro_gasto') {
+                          const { error } = await supabase.from('other_expenses').insert({
+                              user_id: session?.user.id,
+                              vehicle_id: vehiculo_id,
+                              date: args.fecha || new Date().toISOString().split('T')[0],
+                              description: args.descripcion,
+                              amount_cop: args.monto
+                          });
+                          if (error) throw error;
+                          aiTextResponse = `Gasto de ${args.monto} pesos registrado exitosamente.`;
+                      } else if (fnName === 'seleccionar_vehiculo') {
+                          setSelectedVehicleId(args.vehiculo_id);
+                          aiTextResponse = `Vehículo seleccionado correctamente.`;
+                      } else if (fnName.startsWith('consultar_')) {
+                          let queryResult = null;
+                          if (fnName === 'consultar_gastos_mes') {
+                            const { data } = await supabase.from('fuel_logs').select('amount_cop').eq('vehicle_id', vehiculo_id);
+                            queryResult = data;
+                          } else if (fnName === 'consultar_consumo') {
+                            const { data } = await supabase.from('fuel_logs').select('odometer, gallons').eq('vehicle_id', vehiculo_id).order('date', { ascending: false }).limit(args.ultimos_n_registros || 5);
+                            queryResult = data;
+                          } else if (fnName === 'consultar_vencimientos') {
+                            const { data } = await supabase.from('annual_records').select('*').eq('vehicle_id', vehiculo_id);
+                            queryResult = data;
+                          } else if (fnName === 'consultar_historial') {
+                            const table = args.categoria === 'gasolina' ? 'fuel_logs' : args.categoria === 'mantenimiento' ? 'maintenance_logs' : 'other_expenses';
+                            const { data } = await supabase.from(table).select('*').eq('vehicle_id', vehiculo_id).order('date', { ascending: false }).limit(args.limite || 5);
+                            queryResult = data;
+                          }
+                          
+                          // Send query result back to Gemini to get verbal response
+                          const toolResponseText = `Resultado de la consulta (${fnName}): ${JSON.stringify(queryResult)}. Responde brevemente con los datos obtenidos.`;
+                          const response2 = await processUserMessage('', 'text/plain', [...conversationHistory, { role: 'user' as const, content: '[Dictó comando por voz]' }], userContext);
+                          
+                          // Due to stateless edge function, we just simulate the history and pass the query result as if the user said it
+                          const response3 = await processUserMessage(toolResponseText, 'text/plain', [], userContext);
+                          if (response3.candidates && response3.candidates.length > 0) {
+                             const p = response3.candidates[0].content?.parts || [];
+                             for(const p2 of p) {
+                               if (p2.text) aiTextResponse += p2.text;
+                             }
+                          }
+                      }
+                    } catch (e: any) {
+                      console.error('[AI Tool] Error en INSERT:', e?.code, e?.message);
+                      aiTextResponse = "Hubo un error al guardar o consultar en la base de datos.";
                     }
                 } else if (part.text) {
                     aiTextResponse += part.text;
@@ -224,6 +351,18 @@ export default function AIScreen() {
 
         if (!aiTextResponse && !functionCalled) {
             aiTextResponse = "No entendí muy bien lo que dijiste.";
+        }
+        
+        const newHistory = [
+            ...conversationHistory, 
+            { role: 'user' as const, content: '[Comando de voz dictado]' }, 
+            { role: 'model' as const, content: aiTextResponse }
+        ];
+        
+        if (newHistory.length > 10) {
+            setConversationHistory(newHistory.slice(newHistory.length - 10));
+        } else {
+            setConversationHistory(newHistory);
         }
 
         setFeedback(aiTextResponse);
@@ -235,7 +374,7 @@ export default function AIScreen() {
         });
 
     } catch (error: any) {
-        console.error(error);
+        // console.error(error);
         setFeedback('Ocurrió un error al procesar tu solicitud.');
         setState('idle');
     }

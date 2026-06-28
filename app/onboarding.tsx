@@ -352,7 +352,7 @@ export default function OnboardingScreen() {
         });
 
         if (vehicleError) {
-          console.error("Error creating vehicle post-signup:", vehicleError);
+          // console.error("Error creating vehicle post-signup:", vehicleError);
         }
 
         // Activar trial_started_at al completar onboarding

@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(data as Profile);
       }
     } catch (e) {
-      console.error('Error loading profile:', e);
+      // console.error('Error loading profile:', e);
     }
   }, []);
 

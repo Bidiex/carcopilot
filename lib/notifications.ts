@@ -88,7 +88,7 @@ export async function scheduleDocumentReminder(
           },
         });
       } catch (error) {
-        console.error(`Error scheduling notification for ${daysBefore} days:`, error);
+        // console.error(`Error scheduling notification for ${daysBefore} days:`, error);
       }
     }
   }

@@ -130,6 +130,6 @@ export async function recalculateConsumption(vehicleId: string): Promise<void> {
     await Promise.all(promises);
     
   } catch (error) {
-    console.error("Error recalculating consumption:", error);
+    // console.error("Error recalculating consumption:", error);
   }
 }

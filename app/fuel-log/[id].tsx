@@ -122,7 +122,7 @@ export default function FuelLogEditScreen() {
         setStationCity(record.gas_stations.city || "");
       }
     } catch (err) {
-      console.error("Error loading record:", err);
+      // console.error("Error loading record:", err);
       showAlert(
         "Error",
         "No se pudo cargar el registro.",
@@ -235,7 +235,7 @@ export default function FuelLogEditScreen() {
         setGpsMessage("No se pudo obtener la dirección. Intenta de nuevo o ingresa la estación manualmente.");
       }
     } catch (err) {
-      console.error("GPS Error:", err);
+      // console.error("GPS Error:", err);
       setGpsStatus("error");
       setGpsMessage("No se pudo obtener la ubicación. Intenta de nuevo o ingresa la estación manualmente.");
     }
@@ -341,7 +341,7 @@ export default function FuelLogEditScreen() {
             }
           }
         } catch (stError) {
-          console.error("Error processing station:", stError);
+          // console.error("Error processing station:", stError);
           // Fallback, el registro de combustible sigue adelante sin bloquear
         }
       }
