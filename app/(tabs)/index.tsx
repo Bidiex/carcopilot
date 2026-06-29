@@ -55,7 +55,7 @@ export default function HomeScreen() {
   
   const [pickerVisible, setPickerVisible] = useState(false);
 
-  const { insights, loading: insightsLoading, saveInsight, unsaveInsight } = useInsights();
+  const { insights, savedInsights, loading: insightsLoading, saveInsight, unsaveInsight } = useInsights();
 
   const [recentLogs, setRecentLogs] = useState<any[]>(dashboardCache?.recentLogs || []);
   const [loading, setLoading] = useState(vehicles.length === 0);
@@ -420,7 +420,7 @@ export default function HomeScreen() {
                         if (a.type !== "moto" && b.type === "moto") return -1;
                         return 0;
                       })
-                      .map((v, i) => v.model_image && (
+                      .map((v, i) => !!v.model_image && (
                       <Image
                         key={v.id}
                         source={v.type === "moto" ? BIKE_IMAGES[v.model_image] : VEHICLE_IMAGES[v.model_image]}
@@ -434,7 +434,7 @@ export default function HomeScreen() {
                     )}
                   </View>
                 ) : (
-                  (selectedVehicle?.model_image || activeVehicle?.model_image) && (
+                  !!(selectedVehicle?.model_image || activeVehicle?.model_image) && (
                     <Image
                       source={(selectedVehicle || activeVehicle)?.type === "moto" ? BIKE_IMAGES[(selectedVehicle || activeVehicle)?.model_image] : VEHICLE_IMAGES[(selectedVehicle || activeVehicle)?.model_image]}
                       style={styles.cardCarOverlay}
@@ -446,6 +446,7 @@ export default function HomeScreen() {
 
             <InsightsCard 
               insights={insights}
+              hasSavedInsights={savedInsights.length > 0}
               loading={insightsLoading}
               onSaveInsight={saveInsight}
               onUnsaveInsight={unsaveInsight}

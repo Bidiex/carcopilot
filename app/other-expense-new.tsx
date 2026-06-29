@@ -233,6 +233,7 @@ export default function OtherExpenseNewScreen() {
             value={amount}
             onChangeText={setAmount}
             keyboardType="numeric"
+            format="currency"
             error={amountError}
           />
 

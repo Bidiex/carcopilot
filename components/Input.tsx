@@ -9,12 +9,14 @@ import {
 import { Colors, Spacing, Radius } from "../constants/theme";
 import { Text } from "./Typography";
 import { Ionicons } from "@expo/vector-icons";
+import { formatCurrency, formatNumber, unformatNumber } from "../utils/formatters";
 
 interface CustomInputProps extends TextInputProps {
   label?: string;
   error?: string;
   leftIcon?: React.ComponentProps<typeof Ionicons>["name"];
   isPassword?: boolean;
+  format?: 'currency' | 'number';
 }
 
 export const Input: React.FC<CustomInputProps> = ({
@@ -22,9 +24,12 @@ export const Input: React.FC<CustomInputProps> = ({
   error,
   leftIcon,
   isPassword = false,
+  format,
   style,
   onFocus,
   onBlur,
+  value,
+  onChangeText,
   ...props
 }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -38,6 +43,22 @@ export const Input: React.FC<CustomInputProps> = ({
   const handleBlur = (e: any) => {
     setIsFocused(false);
     if (onBlur) onBlur(e);
+  };
+  
+  const handleChangeText = (text: string) => {
+    if (!onChangeText) return;
+    if (format) {
+      onChangeText(unformatNumber(text));
+    } else {
+      onChangeText(text);
+    }
+  };
+  
+  const getDisplayValue = () => {
+    if (value === undefined || value === null) return value;
+    if (format === 'currency') return formatCurrency(value.toString());
+    if (format === 'number') return formatNumber(value.toString());
+    return value.toString();
   };
 
   const isSecure = isPassword && !showPassword;
@@ -73,6 +94,8 @@ export const Input: React.FC<CustomInputProps> = ({
           secureTextEntry={isSecure}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          value={getDisplayValue()}
+          onChangeText={handleChangeText}
           {...props}
         />
 

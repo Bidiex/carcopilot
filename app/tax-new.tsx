@@ -261,6 +261,7 @@ export default function TaxNewScreen() {
             value={amount}
             onChangeText={setAmount}
             keyboardType="numeric"
+            format="currency"
             error={amountError}
           />
 

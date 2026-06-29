@@ -312,6 +312,7 @@ export default function ElectricChargeNewScreen() {
             value={odometer}
             onChangeText={setOdometer}
             keyboardType="numeric"
+            format="number"
             error={odometerError}
           />
 
@@ -339,6 +340,7 @@ export default function ElectricChargeNewScreen() {
             value={amount}
             onChangeText={setAmount}
             keyboardType="numeric"
+            format="currency"
             error={amountError}
           />
 

@@ -719,6 +719,7 @@ export default function OnboardingScreen() {
                   value={odometer}
                   onChangeText={setOdometer}
                   keyboardType="numeric"
+                  format="number"
                   error={odometerError}
                 />
 

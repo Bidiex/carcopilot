@@ -517,6 +517,7 @@ export default function FuelLogEditScreen() {
             value={odometer}
             onChangeText={setOdometer}
             keyboardType="numeric"
+            format="number"
             error={odometerError}
           />
 
@@ -574,6 +575,7 @@ export default function FuelLogEditScreen() {
             value={amount}
             onChangeText={handleAmountChange}
             keyboardType="numeric"
+            format="currency"
             error={amountError}
           />
 
@@ -583,6 +585,7 @@ export default function FuelLogEditScreen() {
             value={pricePerGallon}
             onChangeText={handlePriceChange}
             keyboardType="numeric"
+            format="currency"
             editable={calcMode === "gallons"}
             error={priceError}
           />

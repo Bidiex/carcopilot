@@ -260,6 +260,7 @@ export default function MaintenanceNewScreen() {
             value={amount}
             onChangeText={setAmount}
             keyboardType="numeric"
+            format="currency"
             error={amountError}
           />
 
@@ -269,6 +270,7 @@ export default function MaintenanceNewScreen() {
             value={odometer}
             onChangeText={setOdometer}
             keyboardType="numeric"
+            format="number"
             error={odometerError}
           />
 

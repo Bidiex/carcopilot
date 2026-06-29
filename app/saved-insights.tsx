@@ -61,7 +61,7 @@ export default function SavedInsightsScreen() {
               <Text variant="caption" color="gray500">
                 {formatDate(item.generated_at)}
               </Text>
-              {vehicleName && (
+              {!!vehicleName && (
                 <>
                   <View style={styles.dot} />
                   <Text variant="caption" color="gray500">

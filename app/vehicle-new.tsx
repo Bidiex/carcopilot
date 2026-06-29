@@ -583,6 +583,7 @@ export default function VehicleNewScreen() {
                   value={odometer}
                   onChangeText={setOdometer}
                   keyboardType="numeric"
+                  format="number"
                   error={odometerError}
                 />
 
