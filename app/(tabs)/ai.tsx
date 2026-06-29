@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/Typography';
 import { Colors } from '@/constants/theme';
@@ -10,6 +9,7 @@ import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import * as FileSystem from 'expo-file-system';
 import { processUserMessage, ConversationMessage, UserContext } from '@/lib/ai';
+import { AnimatedOrb, OrbState } from '@/components/AnimatedOrb';
 
 const REQUIRED_PARAMS: Record<string, string[]> = {
   registrar_gasolina: ['vehiculo_id', 'precio_total', 'odometro'],
@@ -46,63 +46,6 @@ export default function AIScreen() {
   
   const { session, planStatus, trialDaysRemaining } = useAuth();
   const trialExpired = planStatus !== 'trial' && planStatus !== 'pro';
-
-  const scale1 = useSharedValue(1);
-  const opacity1 = useSharedValue(0);
-  
-  const scale2 = useSharedValue(1);
-  const opacity2 = useSharedValue(0);
-
-  const scale3 = useSharedValue(1);
-  const opacity3 = useSharedValue(0);
-
-  const startWaves = () => {
-    // Wave 1
-    scale1.value = 1;
-    opacity1.value = 0.6;
-    scale1.value = withRepeat(withTiming(2.5, { duration: 1500, easing: Easing.out(Easing.ease) }), -1, false);
-    opacity1.value = withRepeat(withTiming(0, { duration: 1500, easing: Easing.out(Easing.ease) }), -1, false);
-
-    // Wave 2
-    scale2.value = 1;
-    opacity2.value = 0;
-    setTimeout(() => {
-      opacity2.value = 0.6;
-      scale2.value = withRepeat(withTiming(2.5, { duration: 1500, easing: Easing.out(Easing.ease) }), -1, false);
-      opacity2.value = withRepeat(withTiming(0, { duration: 1500, easing: Easing.out(Easing.ease) }), -1, false);
-    }, 500);
-
-    // Wave 3
-    scale3.value = 1;
-    opacity3.value = 0;
-    setTimeout(() => {
-      opacity3.value = 0.6;
-      scale3.value = withRepeat(withTiming(2.5, { duration: 1500, easing: Easing.out(Easing.ease) }), -1, false);
-      opacity3.value = withRepeat(withTiming(0, { duration: 1500, easing: Easing.out(Easing.ease) }), -1, false);
-    }, 1000);
-  };
-
-  const stopWaves = () => {
-    scale1.value = 1;
-    opacity1.value = 0;
-    scale2.value = 1;
-    opacity2.value = 0;
-    scale3.value = 1;
-    opacity3.value = 0;
-  };
-
-  useEffect(() => {
-    if (state === 'listening' || state === 'speaking') {
-      startWaves();
-    } else {
-      stopWaves();
-    }
-    
-    // Limpieza al desmontar o cambiar de estado para no dejar timeouts huérfanos
-    return () => {
-      // Los animadores cancelan sus tareas automáticamente si cambian los shared values
-    };
-  }, [state]);
 
   const startRecording = async () => {
     try {
@@ -467,55 +410,47 @@ export default function AIScreen() {
     }
   };
 
-  const animatedStyle1 = useAnimatedStyle(() => ({
-    transform: [{ scale: scale1.value }],
-    opacity: opacity1.value,
-  }));
-
-  const animatedStyle2 = useAnimatedStyle(() => ({
-    transform: [{ scale: scale2.value }],
-    opacity: opacity2.value,
-  }));
-
-  const animatedStyle3 = useAnimatedStyle(() => ({
-    transform: [{ scale: scale3.value }],
-    opacity: opacity3.value,
-  }));
-
   return (
     <View style={styles.container}>
       <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
       <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
+      <LinearGradient
+        colors={['#D6D6FF', Colors.white]} // bottom to top
+        start={{ x: 0, y: 1 }}
+        end={{ x: 0, y: 0.5 }} // extends to middle
+        style={StyleSheet.absoluteFill}
+      />
       <View style={styles.content}>
-        <Text variant="display" color="gray900" align="center" style={styles.title}>
-          {state === 'idle' ? 'Asistente IA' : state === 'listening' ? 'Escuchando...' : state === 'processing' ? 'Pensando...' : 'Respondiendo...'}
-        </Text>
-        <Text variant="body" color="gray500" align="center" style={styles.subtitle}>
-          {feedback ? feedback : (state === 'idle' ? 'Toca el micrófono y di "Registrar un tanqueo de 50 mil pesos"' : state === 'listening' ? 'Te escucho... Pararé cuando termines de hablar.' : 'Espera un momento...')}
-        </Text>
+        
+        {/* TOP: Feedback & Title */}
+        <View style={styles.topSection}>
+          <Text variant="display" color="gray900" align="center" style={styles.title}>
+            {state === 'idle' ? 'Asistente IA' : state === 'listening' ? 'Escuchando...' : state === 'processing' ? 'Pensando...' : 'Respondiendo...'}
+          </Text>
+          <Text variant="body" color="gray500" align="center" style={styles.subtitle}>
+            {feedback ? feedback : (state === 'idle' ? 'Toca el micrófono y di "Registrar un tanqueo de 50 mil pesos"' : state === 'listening' ? 'Te escucho... Pararé cuando termines de hablar.' : 'Espera un momento...')}
+          </Text>
+        </View>
 
-        <View style={styles.micContainer}>
-          <Animated.View style={[styles.wave, animatedStyle3]} />
-          <Animated.View style={[styles.wave, animatedStyle2]} />
-          <Animated.View style={[styles.wave, animatedStyle1]} />
+        {/* CENTER: Orb */}
+        <View style={styles.centerSection}>
+          <AnimatedOrb state={state as OrbState} size={220} />
+        </View>
 
+        {/* BOTTOM: Mic Button */}
+        <View style={styles.bottomSection}>
           <TouchableOpacity
-            activeOpacity={0.9}
+            activeOpacity={0.6}
             onPress={toggleState}
             style={styles.micButtonWrapper}
           >
-            <LinearGradient
-              colors={state === 'speaking' ? ["#2ECC71", "#27AE60"] : [Colors.gradientStart, Colors.gradientEnd]}
-              style={styles.micButton}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
+            <View style={styles.micButton}>
               <Ionicons 
-                name={state === 'speaking' ? "volume-high" : state === 'processing' ? "pulse" : "mic"} 
-                size={56} 
-                color={Colors.white} 
+                name={state === 'speaking' ? "volume-high" : state === 'processing' ? "pulse" : state === 'listening' ? "stop" : "mic"} 
+                size={42} 
+                color={state === 'speaking' ? Colors.success : state === 'listening' ? Colors.danger : Colors.primary500} 
               />
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -536,42 +471,42 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 24,
+  },
+  topSection: {
+    marginTop: 40,
+    alignItems: 'center',
+    minHeight: 120,
   },
   title: {
     marginBottom: 12,
   },
   subtitle: {
-    marginBottom: 80,
+    marginBottom: 0,
   },
-  micContainer: {
-    width: width * 0.8,
-    height: width * 0.8,
+  centerSection: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  wave: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: Colors.primary500,
+  bottomSection: {
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 20,
   },
   micButtonWrapper: {
-    shadowColor: Colors.primary500,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-    zIndex: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 72,
+    height: 72,
   },
   micButton: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
 });

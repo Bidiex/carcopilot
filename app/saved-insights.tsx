@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Dimensions } from "react-native";
+import { View, StyleSheet, FlatList, TouchableOpacity, Dimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Text } from "@/components/Typography";
 import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
@@ -85,14 +86,16 @@ export default function SavedInsightsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={24} color={Colors.gray900} />
         </TouchableOpacity>
         <Text variant="heading2" weight="700" color="gray900" style={styles.title}>Pendientes</Text>
-        <View style={{ width: 40 }} /> {/* Placeholder for balance */}
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Content */}
@@ -123,10 +126,12 @@ export default function SavedInsightsScreen() {
         />
       )}
     </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.primary500 },
   safeArea: {
     flex: 1,
     backgroundColor: Colors.gray50,

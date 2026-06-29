@@ -140,7 +140,7 @@ export default function AccountScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text variant="heading1" color="gray900" weight="700">
+          <Text variant="heading2" color="gray900" weight="700">
             Mi Cuenta
           </Text>
         </View>

@@ -178,7 +178,7 @@ export default function VehiclesScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text variant="heading1" color="gray900" weight="700">
+            <Text variant="heading2" color="gray900" weight="700">
               Mis Vehículos
             </Text>
             <Text variant="caption" color="gray500">

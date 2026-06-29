@@ -367,15 +367,20 @@ export default function FuelLogNewScreen() {
 
   if (fetchingVehicle) {
     return (
-      <SafeAreaView style={styles.loadingArea}>
+      <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.loadingArea}>
         <ActivityIndicator size="large" color={Colors.primary500} />
       </SafeAreaView>
+    </View>
     );
   }
 
   if (!activeVehicle) {
     return (
-      <SafeAreaView style={styles.errorArea}>
+      <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.errorArea}>
         <Ionicons name="alert-circle-outline" size={48} color={Colors.danger} />
         <Text variant="heading2" color="gray900" weight="700" align="center" style={styles.errorTitle}>
           No tienes vehículos activos
@@ -389,11 +394,14 @@ export default function FuelLogNewScreen() {
           style={styles.errorButton}
         />
       </SafeAreaView>
+    </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
@@ -651,10 +659,12 @@ export default function FuelLogNewScreen() {
         onUpgrade={() => { closeUpgradeModal(); router.push('/upgrade' as any); }}
       />
     </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.primary500 },
   safeArea: {
     flex: 1,
     backgroundColor: Colors.gray50,

@@ -4,7 +4,7 @@ import { Text } from "@/components/Typography";
 import { Colors, Spacing, Radius, Layout } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming, withSequence } from "react-native-reanimated";
+import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming, withSequence, useAnimatedProps, Easing } from "react-native-reanimated";
 import { AiInsight } from "@/types/app";
 import { useRouter } from "expo-router";
 
@@ -28,6 +28,47 @@ const INSIGHT_ICONS: Record<string, { name: any }> = {
   achievement: { name: "trophy-outline" },
   prediction: { name: "trending-up-outline" },
 };
+
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
+
+function AnimatedGradientCard({ children, style }: { children: React.ReactNode, style?: any }) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    // Animamos de 0 a 2PI de forma continua para lograr un giro completo de 360 grados
+    progress.value = withRepeat(
+      withTiming(Math.PI * 2, { duration: 3500, easing: Easing.linear }),
+      -1,
+      false // Falso para que el giro sea siempre en la misma dirección, sin retroceder
+    );
+  }, []);
+
+  const animatedProps = useAnimatedProps(() => {
+    'worklet';
+    // Usamos seno y coseno para rotar los puntos de inicio y fin en un círculo
+    const x1 = 0.5 + 0.8 * Math.cos(progress.value);
+    const y1 = 0.5 + 0.8 * Math.sin(progress.value);
+    
+    // El punto final siempre en el lado opuesto
+    const x2 = 0.5 + 0.8 * Math.cos(progress.value + Math.PI);
+    const y2 = 0.5 + 0.8 * Math.sin(progress.value + Math.PI);
+
+    return {
+      start: { x: x1, y: y1 },
+      end: { x: x2, y: y2 },
+    } as any;
+  });
+
+  return (
+    <AnimatedLinearGradient
+      animatedProps={animatedProps}
+      colors={[PRIMARY_300, Colors.primary600, PRIMARY_300]}
+      style={style}
+    >
+      {children}
+    </AnimatedLinearGradient>
+  );
+}
 
 function SkeletonLoader() {
   const opacity = useSharedValue(0.5);
@@ -55,18 +96,13 @@ function SkeletonLoader() {
           <Text variant="sectionTitle" color="gray900" weight="700">COPILOTO IA</Text>
         </View>
       </View>
-      <LinearGradient
-        colors={[PRIMARY_300, Colors.primary600]}
-        start={{ x: 1, y: 1 }}
-        end={{ x: 0, y: 0 }}
-        style={styles.skeletonCard}
-      >
+      <AnimatedGradientCard style={styles.skeletonCard}>
         <View style={styles.skeletonContent}>
           <Animated.View style={[styles.skeletonLine, animatedStyle, { width: '90%' }]} />
           <Animated.View style={[styles.skeletonLine, animatedStyle, { width: '75%' }]} />
           <Animated.View style={[styles.skeletonLine, animatedStyle, { width: '40%' }]} />
         </View>
-      </LinearGradient>
+      </AnimatedGradientCard>
     </View>
   );
 }
@@ -108,12 +144,7 @@ export function InsightsCard({ insights, hasSavedInsights, loading, onSaveInsigh
     const iconData = INSIGHT_ICONS[item.type] || INSIGHT_ICONS.tip;
     return (
       <Animated.View entering={FadeIn.delay(100 * index).duration(400)}>
-        <LinearGradient
-          colors={[PRIMARY_300, Colors.primary600]}
-          start={{ x: 1, y: 1 }}
-          end={{ x: 0, y: 0 }}
-          style={styles.insightCard}
-        >
+        <AnimatedGradientCard style={styles.insightCard}>
           <View style={styles.insightRow}>
             <View style={[styles.iconContainer, { backgroundColor: `rgba(255, 255, 255, 0.2)` }]}>
               <Ionicons name={iconData.name} size={20} color={Colors.white} />
@@ -137,7 +168,7 @@ export function InsightsCard({ insights, hasSavedInsights, loading, onSaveInsigh
               />
             </TouchableOpacity>
           </View>
-        </LinearGradient>
+        </AnimatedGradientCard>
       </Animated.View>
     );
   };
@@ -155,18 +186,13 @@ export function InsightsCard({ insights, hasSavedInsights, loading, onSaveInsigh
       </View>
 
       {(!insights || insights.length === 0) ? (
-        <LinearGradient
-          colors={[PRIMARY_300, Colors.primary600]}
-          start={{ x: 1, y: 1 }}
-          end={{ x: 0, y: 0 }}
-          style={[styles.insightCard, { width: '100%', marginRight: 0 }]}
-        >
+        <AnimatedGradientCard style={[styles.insightCard, { width: '100%', marginRight: 0 }]}>
           <View style={{ paddingVertical: Spacing.sm }}>
             <Text variant="body" color="white" align="center" style={{ opacity: 0.9 }}>
               No hay nuevos insights por ahora.
             </Text>
           </View>
-        </LinearGradient>
+        </AnimatedGradientCard>
       ) : (
         <FlatList
           ref={flatListRef}

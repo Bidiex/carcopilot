@@ -205,22 +205,30 @@ export default function ReportsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingArea}>
+      <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.loadingArea}>
         <ActivityIndicator size="large" color={Colors.primary500} />
       </SafeAreaView>
+    </View>
     );
   }
 
   if (!activeVehicle) {
     return (
-      <SafeAreaView style={styles.loadingArea}>
+      <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.loadingArea}>
         <Text variant="body" color="gray600">No hay vehículo activo para reportes.</Text>
       </SafeAreaView>
+    </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity activeOpacity={0.7} onPress={() => router.back()} style={styles.backButton}>
@@ -341,10 +349,12 @@ export default function ReportsScreen() {
 
       </ScrollView>
     </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.primary500 },
   safeArea: { flex: 1, backgroundColor: Colors.gray50 },
   loadingArea: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.gray50 },
   errorBanner: {
