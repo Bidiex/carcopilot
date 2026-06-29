@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors, Shadows } from "@/constants/theme";
 import { Platform, View, TouchableOpacity, StyleSheet } from "react-native";
 import { useStartupRecalculation } from "@/hooks/useStartupRecalculation";
+import { useStartupInsights } from "@/hooks/useStartupInsights";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -28,6 +29,7 @@ const AITabBarButton = ({ children, onPress }: any) => (
 
 export default function TabLayout() {
   useStartupRecalculation();
+  useStartupInsights();
 
   const { planStatus, trialDaysRemaining, user, profile, refreshProfile } = useAuth();
   const [trialModalVisible, setTrialModalVisible] = useState(true);

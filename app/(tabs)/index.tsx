@@ -25,6 +25,8 @@ import { LineChart } from "react-native-gifted-charts";
 import { VEHICLE_IMAGES, BIKE_IMAGES } from "@/constants/vehicles";
 import { useActionGuard } from "@/hooks/useActionGuard";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { InsightsCard } from "@/components/home/InsightsCard";
+import { useInsights } from "@/hooks/useInsights";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -52,6 +54,8 @@ export default function HomeScreen() {
   });
   
   const [pickerVisible, setPickerVisible] = useState(false);
+
+  const { insights, loading: insightsLoading, saveInsight, unsaveInsight } = useInsights();
 
   const [recentLogs, setRecentLogs] = useState<any[]>(dashboardCache?.recentLogs || []);
   const [loading, setLoading] = useState(vehicles.length === 0);
@@ -132,8 +136,8 @@ export default function HomeScreen() {
           // Fuel Metrics
           let lastDate = null;
           let daysSince = null;
-          let minPrice = null;
-          let maxPrice = null;
+          let minPrice: number | null = null;
+          let maxPrice: number | null = null;
           let minPriceType = null;
           let maxPriceType = null;
           let avgKmPerDay = null;
@@ -439,6 +443,13 @@ export default function HomeScreen() {
                 )}
               </Card>
             </View>
+
+            <InsightsCard 
+              insights={insights}
+              loading={insightsLoading}
+              onSaveInsight={saveInsight}
+              onUnsaveInsight={unsaveInsight}
+            />
 
             {/* Line Chart Section */}
             <View style={styles.sectionDivider} />

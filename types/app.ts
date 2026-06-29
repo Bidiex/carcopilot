@@ -24,3 +24,16 @@ export type PushToken = {
   device_platform: string | null
   updated_at: string
 }
+
+export type AiInsight = {
+  id: string
+  user_id: string
+  vehicle_id: string | null
+  content: string
+  type: 'alert' | 'tip' | 'achievement' | 'prediction'
+  priority: number
+  is_saved: boolean
+  generated_at: string
+  expires_at: string
+  read_at: string | null
+}
