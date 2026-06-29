@@ -105,6 +105,7 @@ export default function TabLayout() {
           name="ai"
           options={{
             title: "Copilot",
+            tabBarStyle: { display: 'none' },
             tabBarLabel: () => null,
             tabBarIcon: () => (
               <Ionicons name="sparkles" size={28} color={Colors.white} />

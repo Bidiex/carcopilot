@@ -1,9 +1,12 @@
 export const Colors = {
   primary: "#4D4DFF",
   primary50: "#EDEDFF",
+  primary200: "#B3B3FF",
   primary500: "#4D4DFF",
   primary600: "#3E3EFF",
   primary700: "#3434F5",
+  primary800: "#1E1E99",
+  primary900: "#0A0A33",
 
   gradientStart: "#6366FF",
   gradientMiddle: "#5858FF",

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/Typography';
@@ -8,8 +8,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-av';
 import * as Speech from 'expo-speech';
 import * as FileSystem from 'expo-file-system';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { processUserMessage, ConversationMessage, UserContext } from '@/lib/ai';
 import { AnimatedOrb, OrbState } from '@/components/AnimatedOrb';
+import { IdleOrbRing } from '@/components/IdleOrbRing';
 
 const REQUIRED_PARAMS: Record<string, string[]> = {
   registrar_gasolina: ['vehiculo_id', 'precio_total', 'odometro'],
@@ -28,12 +32,11 @@ function validateFunctionArgs(toolName: string, args: Record<string, any>): stri
     args[param] === undefined || args[param] === null || args[param] === ''
   );
 }
-import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
 
 const { width } = Dimensions.get('window');
 
 export default function AIScreen() {
+  const router = useRouter();
   const [state, setState] = useState<'idle' | 'listening' | 'speaking' | 'processing'>('idle');
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const recordingRef = React.useRef<Audio.Recording | null>(null);
@@ -44,8 +47,45 @@ export default function AIScreen() {
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   
+  // Nuevo estado para controlar la visibilidad permanente y los vehículos
+  const [hasActivated, setHasActivated] = useState<boolean>(false);
+  const [vehiclesData, setVehiclesData] = useState<any[]>([]);
+  const [activeVehicleIndex, setActiveVehicleIndex] = useState<number>(0);
+  
   const { session, planStatus, trialDaysRemaining } = useAuth();
   const trialExpired = planStatus !== 'trial' && planStatus !== 'pro';
+
+  useEffect(() => {
+    if (session?.user.id) {
+      supabase
+        .from('vehicles')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setVehiclesData(data);
+          }
+        });
+    }
+  }, [session?.user.id]);
+
+  useEffect(() => {
+    if (vehiclesData.length > 1) {
+      const interval = setInterval(() => {
+        setActiveVehicleIndex((prev) => (prev + 1) % vehiclesData.length);
+      }, 64000); // 64 segundos de delay entre vehículos
+      return () => clearInterval(interval);
+    }
+  }, [vehiclesData.length]);
+
+  // Current vehicle to display
+  const currentVehicle = vehiclesData[activeVehicleIndex] || null;
+
+  useEffect(() => {
+    if (state !== 'idle') {
+      setHasActivated(true);
+    }
+  }, [state]);
 
   const startRecording = async () => {
     try {
@@ -143,11 +183,11 @@ export default function AIScreen() {
             // Ignorar error al borrar
         }
         
-        // Obtener contexto de vehículos
-        const { data: vehicles } = await supabase
+        // Usamos los vehículos ya cargados o los re-consultamos si no hay
+        const vehicles = vehiclesData.length > 0 ? vehiclesData : (await supabase
             .from('vehicles')
             .select('*')
-            .eq('user_id', session?.user.id);
+            .eq('user_id', session?.user.id)).data;
         
         const activeVehicle = vehicles?.find(v => v.id === selectedVehicleId) || vehicles?.find(v => v.is_active) || vehicles?.[0];
         
@@ -415,29 +455,43 @@ export default function AIScreen() {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary900 }} />
       <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
       <LinearGradient
-        colors={['#D6D6FF', Colors.white]} // bottom to top
+        colors={[Colors.primary, Colors.primary900]} // bottom to top
         start={{ x: 0, y: 1 }}
-        end={{ x: 0, y: 0.5 }} // extends to middle
+        end={{ x: 0, y: 0 }}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.content}>
+
         
-        {/* TOP: Feedback & Title */}
-        <View style={styles.topSection}>
-          <Text variant="display" color="gray900" align="center" style={styles.title}>
-            {state === 'idle' ? 'Asistente IA' : state === 'listening' ? 'Escuchando...' : state === 'processing' ? 'Pensando...' : 'Respondiendo...'}
-          </Text>
-          <Text variant="body" color="gray500" align="center" style={styles.subtitle}>
-            {feedback ? feedback : (state === 'idle' ? 'Toca el micrófono y di "Registrar un tanqueo de 50 mil pesos"' : state === 'listening' ? 'Te escucho... Pararé cuando termines de hablar.' : 'Espera un momento...')}
-          </Text>
+        {/* TOP: Menu Header */}
+        <View style={styles.headerSection}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={Colors.white} />
+          </TouchableOpacity>
+          <View style={styles.headerPill}>
+            <Text variant="body" color="white" style={styles.headerPillText}>CarCopilot IA</Text>
+          </View>
+          <View style={{ width: 40 }} />
         </View>
 
-        {/* CENTER: Orb */}
-        <View style={styles.centerSection}>
-          <AnimatedOrb state={state as OrbState} size={220} />
+        {/* CENTER: Orb and Ring */}
+        <View style={[styles.centerSection, { zIndex: 100, elevation: 100 }]}>
+          {/* El anillo solo se muestra si nunca se ha activado la IA */}
+          <IdleOrbRing active={state === 'idle' && !hasActivated} />
+          <AnimatedOrb state={state as OrbState} size={240} vehicle={currentVehicle} />
+        </View>
+
+        {/* BOTTOM MESSAGES */}
+        <View style={styles.messageSection}>
+          <Text variant="heading2" color="white" align="center" style={styles.mainResponse}>
+            {feedback ? feedback : (state === 'idle' ? '¿En qué puedo ayudarte?' : state === 'listening' ? '' : 'Procesando...')}
+          </Text>
+          <Text variant="body" align="center" style={styles.statusText}>
+            {state === 'listening' ? 'Escuchando...' : ' '}
+          </Text>
         </View>
 
         {/* BOTTOM: Mic Button */}
@@ -451,7 +505,7 @@ export default function AIScreen() {
               <Ionicons 
                 name={state === 'speaking' ? "volume-high" : state === 'processing' ? "pulse" : state === 'listening' ? "stop" : "mic"} 
                 size={42} 
-                color={state === 'speaking' ? Colors.success : state === 'listening' ? Colors.danger : Colors.primary500} 
+                color={state === 'speaking' ? Colors.success : state === 'listening' ? Colors.white : Colors.white} 
               />
             </View>
           </TouchableOpacity>
@@ -466,31 +520,71 @@ export default function AIScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary500,
+    backgroundColor: Colors.primary900,
   },
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.primary900,
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
   },
-  topSection: {
-    marginTop: 40,
+  headerSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    minHeight: 120,
+    marginTop: 16,
+    paddingHorizontal: 8,
+    zIndex: 10,
   },
-  title: {
-    marginBottom: 12,
+  iconButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20,
   },
-  subtitle: {
-    marginBottom: 0,
+  headerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  headerPillText: {
+    fontFamily: "Montserrat_600SemiBold",
   },
   centerSection: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 60,
+    shadowColor: 'white',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 100,
+  },
+  messageSection: {
+    minHeight: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  mainResponse: {
+    marginBottom: 16,
+    fontFamily: "Montserrat_400Regular",
+  },
+  statusText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontFamily: "Montserrat_400Regular",
   },
   bottomSection: {
     height: 120,
@@ -501,15 +595,17 @@ const styles = StyleSheet.create({
   micButtonWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 72,
-    height: 72,
+    width: 80,
+    height: 80,
   },
   micButton: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
 });
