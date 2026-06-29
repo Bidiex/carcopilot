@@ -199,7 +199,7 @@ export default function HomeScreen() {
           
           fuelRes.data?.forEach(l => { if (l.date >= thirtyDaysAgoStr) { stats.fuel += parseFloat(l.amount_cop); stats.total += parseFloat(l.amount_cop); }});
           chargeRes.data?.forEach(l => { if (l.date >= thirtyDaysAgoStr) { stats.fuel += parseFloat(l.amount_cop); stats.total += parseFloat(l.amount_cop); }});
-          maintRes.data?.forEach(l => { if (l.date >= thirtyDaysAgoStr) { stats.maint += parseFloat(l.amount_cop); stats.total += parseFloat(l.amount_cop); }});
+          maintRes.data?.forEach(l => { if (l.date >= thirtyDaysAgoStr) { stats.maint += parseFloat(l.total_amount_cop ?? l.amount_cop ?? 0); stats.total += parseFloat(l.total_amount_cop ?? l.amount_cop ?? 0); }});
           taxRes.data?.forEach(l => { if (l.issue_date >= thirtyDaysAgoStr) { stats.tax += parseFloat(l.amount_cop); stats.total += parseFloat(l.amount_cop); }});
           otherRes.data?.forEach(l => { if (l.date >= thirtyDaysAgoStr) { stats.other += parseFloat(l.amount_cop); stats.total += parseFloat(l.amount_cop); }});
           
@@ -214,7 +214,7 @@ export default function HomeScreen() {
             if (!log[dateField]) return;
             const key = getMonthKey(log[dateField]);
             if (!chartMap[key]) chartMap[key] = { total: 0, fuel: 0, maint: 0, tax: 0, other: 0 };
-            const amt = parseFloat(log.amount_cop);
+            const amt = parseFloat(log.total_amount_cop ?? log.amount_cop ?? 0);
             chartMap[key][type] += amt;
             chartMap[key].total += amt;
           };
@@ -616,17 +616,17 @@ export default function HomeScreen() {
                             {log.record_type === 'fuel'
                               ? (log.full_tank ? "Tanqueo Lleno" : "Carga Parcial")
                               : log.record_type === 'electric-charge' ? "Carga Eléctrica"
-                              : log.record_type === 'maintenance' ? log.type
+                              : log.record_type === 'maintenance' ? (log.items?.length > 1 ? `${log.items[0].item} y ${log.items.length - 1} más` : (log.items?.[0]?.item || log.type))
                               : log.record_type === 'tax' ? (log.type === "soat" ? "SOAT" : log.type === "tax" ? "Impuesto" : "Documento")
                               : log.description}
                           </Text>
                           <Text variant="caption" color="gray500">
-                            {log.date}
+                            {log.record_type === 'maintenance' && log.taller ? `${log.taller} • ` : ''}{log.date}
                           </Text>
                         </View>
                         <View style={styles.transAmount}>
                           <Text variant="body" color="primary500" weight="600">
-                            {formatCOP(parseFloat(log.amount_cop))}
+                            {formatCOP(parseFloat(log.total_amount_cop ?? log.amount_cop ?? 0))}
                           </Text>
                         </View>
                       </TouchableOpacity>

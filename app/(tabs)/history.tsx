@@ -268,21 +268,21 @@ export default function HistoryScreen() {
                     : log.record_type === 'electric-charge'
                     ? "Carga Eléctrica"
                     : log.record_type === 'maintenance'
-                    ? log.type
+                    ? (log.items?.length > 1 ? `${log.items[0].item} y ${log.items.length - 1} más` : (log.items?.[0]?.item || log.type))
                     : log.record_type === 'tax'
                     ? (log.type === "soat" ? "SOAT" : log.type === "tax" ? "Impuesto" : "Documento")
                     : log.description}
                 </Text>
                 <Text variant="caption" color="gray500">
-                  {log.date}
+                  {log.record_type === 'maintenance' && log.taller ? `${log.taller} • ` : ''}{log.date}
                   {log.record_type === 'fuel' && ` • ${parseFloat(log.gallons).toFixed(2)} gal`}
                   {log.record_type === 'electric-charge' && ` • ${parseFloat(log.kwh_charged).toFixed(1)} kWh`}
                   {log.record_type === 'maintenance' && ` • ${log.odometer} km`}
                 </Text>
               </View>
               <View style={styles.transAmount}>
-                <Text variant="body" color="danger" weight="600">
-                  -{formatCOP(parseFloat(log.amount_cop))}
+                <Text variant="body" color="primary600" weight="600">
+                  {formatCOP(parseFloat(log.total_amount_cop || log.amount_cop || 0))}
                 </Text>
                 {log.record_type === 'fuel' && log.consumption_km_gal && (
                   <Text variant="smallLabel" color="success" weight="600">

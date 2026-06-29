@@ -42,18 +42,30 @@ const ALL_TOOLS = [
   },
   {
     name: 'registrar_mantenimiento',
-    description: 'Registra un gasto de mantenimiento o reparación del vehículo.',
+    description: 'Registra uno o más trabajos de mantenimiento realizados en el vehículo en una misma visita al taller.',
     parameters: {
       type: 'OBJECT',
       properties: {
         vehiculo_id: { type: 'STRING' },
-        descripcion: { type: 'STRING', description: 'Descripción del mantenimiento realizado' },
-        costo: { type: 'NUMBER', description: 'Costo total en COP' },
-        odometro: { type: 'NUMBER', description: 'Lectura del odómetro al momento del mantenimiento' },
+        odometro: { type: 'NUMBER', description: 'Kilometraje actual del vehículo' },
         taller: { type: 'STRING', description: 'Nombre del taller o lugar donde se realizó (opcional)' },
-        tipo: { type: 'STRING', description: 'Tipo o ID de la categoría (revisa el listado de categorías en las instrucciones del sistema dependiendo si es carro o moto)' },
+        notas_generales: { type: 'STRING', description: 'Observaciones generales de la visita (opcional)' },
+        trabajos: {
+          type: 'ARRAY',
+          description: 'Lista de trabajos realizados. Debe tener al menos 1 elemento.',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              categoria: { type: 'STRING', description: 'Categoría del trabajo (ej: Lubricación, Frenos, Suspensión)' },
+              componente: { type: 'STRING', description: 'Componente o servicio específico (ej: Aceite de motor, Pastillas delanteras)' },
+              costo: { type: 'NUMBER', description: 'Costo de este trabajo específico en COP' },
+              notas: { type: 'STRING', description: 'Observación específica de este trabajo (opcional)' },
+            },
+            required: ['categoria', 'componente', 'costo']
+          }
+        },
       },
-      required: ['vehiculo_id', 'descripcion', 'costo', 'odometro', 'tipo'],
+      required: ['vehiculo_id', 'trabajos'],
     }
   },
   {
@@ -220,6 +232,12 @@ REGLAS DE OPERACIÓN:
 3. Mantén tus respuestas habladas por debajo de las 30 palabras. Eres un copiloto rápido.
 4. NUNCA respondas con bloques de código (Markdown). Responde solo con lenguaje natural que pueda ser leído en voz alta (texto plano).
 5. REGLA CRÍTICA: Si el usuario no provee uno o más de los parámetros requeridos para una herramienta (como odómetro, galones, kWh o tipo), NO asumas los valores ni llames a la herramienta con valores nulos. DEBES responder haciendo las preguntas necesarias para obtener la información faltante, y NO invoques la herramienta hasta tener todos los datos requeridos.
+
+Para registrar_mantenimiento:
+- El campo "trabajos" es un array — SIEMPRE usarlo aunque sea un solo trabajo. Nunca aplanar los trabajos en campos sueltos.
+- Para "categoria", usar el nombre legible en español (ej: "Lubricación") NO el ID técnico (ej: "motor_lubricacion"). Esto garantiza consistencia con los registros manuales.
+- Si el usuario menciona varios trabajos en un solo mensaje (ej: "cambié el aceite, el filtro y revisé los frenos"), detectarlos todos y ponerlos como items separados en el array "trabajos".
+- Si el usuario menciona solo el costo total sin desglosar por trabajo, asignar el costo total al primer (y único) item si es un trabajo solo, o preguntar el desglose si son varios trabajos.
 `;
 }
 

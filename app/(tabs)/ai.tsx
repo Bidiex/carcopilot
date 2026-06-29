@@ -14,7 +14,7 @@ import { AnimatedOrb, OrbState } from '@/components/AnimatedOrb';
 const REQUIRED_PARAMS: Record<string, string[]> = {
   registrar_gasolina: ['vehiculo_id', 'precio_total', 'odometro'],
   registrar_carga_electrica: ['vehiculo_id', 'costo_total', 'kwh_cargados', 'odometro'],
-  registrar_mantenimiento: ['vehiculo_id', 'descripcion', 'costo', 'odometro', 'tipo'],
+  registrar_mantenimiento: ['vehiculo_id', 'trabajos'],
   registrar_soat: ['vehiculo_id', 'valor_pagado', 'fecha_pago'],
   registrar_tecnomecanica: ['vehiculo_id', 'valor_pagado', 'fecha_revision'],
   registrar_impuesto: ['vehiculo_id', 'valor_pagado', 'anio_gravable', 'fecha_pago'],
@@ -272,18 +272,21 @@ export default function AIScreen() {
                           if (error) throw error;
                           aiTextResponse = `Listo, he registrado la carga eléctrica por ${args.costo_total} pesos.`;
                       } else if (fnName === 'registrar_mantenimiento') {
-                          const finalDescription = args.taller ? `${args.descripcion} (Taller: ${args.taller})` : args.descripcion;
+                          const totalCost = (args.trabajos || []).reduce((acc: number, item: any) => acc + (Number(item.costo) || 0), 0);
                           const { error } = await supabase.from('maintenance_logs').insert({
                               user_id: session?.user.id,
                               vehicle_id: vehiculo_id,
                               date: new Date().toISOString().split('T')[0],
-                              odometer: args.odometro,
-                              description: finalDescription,
-                              amount_cop: args.costo,
-                              type: args.tipo
+                              odometer: args.odometro || 0,
+                              description: args.notas_generales || null,
+                              total_amount_cop: totalCost,
+                              taller: args.taller || null,
+                              items: args.trabajos || [],
+                              type: args.trabajos?.[0]?.componente || null
                           });
                           if (error) throw error;
-                          aiTextResponse = `Mantenimiento registrado correctamente por ${args.costo} pesos.`;
+                          const jobsCount = args.trabajos?.length || 1;
+                          aiTextResponse = `Mantenimiento registrado. Se guardaron ${jobsCount} trabajo${jobsCount !== 1 ? 's' : ''} por un total de ${totalCost} pesos.`;
                       } else if (fnName === 'registrar_soat' || fnName === 'registrar_tecnomecanica' || fnName === 'registrar_impuesto') {
                           let type = 'soat';
                           if (fnName === 'registrar_tecnomecanica') type = 'tech_inspection';

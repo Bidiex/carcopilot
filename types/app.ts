@@ -37,3 +37,26 @@ export type AiInsight = {
   expires_at: string
   read_at: string | null
 }
+
+export type MaintenanceItem = {
+  category: string;
+  item: string;
+  cost: number;
+  notes: string | null;
+};
+
+export type MaintenanceLog = {
+  id: string;
+  vehicle_id: string;
+  user_id: string;
+  date: string;
+  odometer: number;
+  total_amount_cop: number;
+  description: string | null;
+  taller: string | null;
+  type: string | null;
+  items: MaintenanceItem[];
+  created_at: string | null;
+};
+
+export type NewMaintenanceLog = Omit<MaintenanceLog, 'id' | 'created_at'>;
