@@ -12,6 +12,7 @@ import {
   FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -94,6 +95,45 @@ const GASOLINE_SUBTYPES = [
   { label: "Corriente", value: "corriente" },
   { label: "Extra (Premium)", value: "extra" },
 ];
+
+const ONBOARDING_MESSAGES = [
+  "Monitorea consumos reales de combustible...",
+  "Recordatorios automáticos de SOAT e Impuestos...",
+  "Registra gastos cómodamente usando tu voz...",
+  "Tu copiloto inteligente para el cuidado de tu vehículo...",
+  "Mantén el historial mecánico siempre a la mano..."
+];
+
+const ChangingMessages = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const opacity = useState(new Animated.Value(1))[0];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        setCurrentIndex((prev) => (prev + 1) % ONBOARDING_MESSAGES.length);
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [opacity]);
+
+  return (
+    <Animated.View style={[styles.changingMessagesContainer, { opacity }]}>
+      <Text variant="body" color="white" weight="500" align="center" style={styles.changingMessageText}>
+        {ONBOARDING_MESSAGES[currentIndex]}
+      </Text>
+    </Animated.View>
+  );
+};
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -422,8 +462,14 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
-      <SafeAreaView edges={["left", "right", "bottom"]} style={styles.safeArea}>
+      {step === 1 && (
+        <LinearGradient
+          colors={[Colors.primary500, Colors.primary900]}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
+      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: step === 1 ? 'transparent' : Colors.primary500 }} />
+      <SafeAreaView edges={["left", "right", "bottom"]} style={[styles.safeArea, step === 1 && { backgroundColor: 'transparent' }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
@@ -451,42 +497,11 @@ export default function OnboardingScreen() {
               <View style={styles.illustrationCircle}>
                 <Ionicons name="car-outline" size={56} color={Colors.white} />
               </View>
-              <Text variant="display" color="primary" weight="700" align="center" style={styles.welcomeTitle}>
+              <Text variant="display" color="white" weight="700" align="center" style={[styles.welcomeTitle, { fontStyle: 'italic' }]}>
                 CarCopilot
               </Text>
-              <Text variant="heading2" color="gray900" weight="600" align="center" style={styles.welcomeSubtitle}>
-                ¡Hola! 🚗 Comencemos a darle vida a tu nuevo garaje digital.
-              </Text>
-              <Text variant="body" color="gray600" align="center" style={styles.welcomeText}>
-                Registra tu carro o moto y personaliza su silueta representativa antes de crear tu cuenta.
-              </Text>
 
-              <View style={styles.featureList}>
-                <View style={styles.featureItem}>
-                  <View style={styles.featureIconContainer}>
-                    <Ionicons name="water-outline" size={20} color={Colors.primary500} />
-                  </View>
-                  <Text variant="body" color="gray700" weight="500" style={styles.featureItemText}>
-                    Monitorea consumos reales de combustible
-                  </Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <View style={styles.featureIconContainer}>
-                    <Ionicons name="notifications-outline" size={20} color={Colors.primary500} />
-                  </View>
-                  <Text variant="body" color="gray700" weight="500" style={styles.featureItemText}>
-                    Recordatorios automáticos de SOAT e Impuestos
-                  </Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <View style={styles.featureIconContainer}>
-                    <Ionicons name="mic-outline" size={20} color={Colors.primary500} />
-                  </View>
-                  <Text variant="body" color="gray700" weight="500" style={styles.featureItemText}>
-                    Registra gastos cómodamente usando tu voz
-                  </Text>
-                </View>
-              </View>
+              <ChangingMessages />
 
               <Button
                 title="Configurar mi Vehículo"
@@ -498,7 +513,7 @@ export default function OnboardingScreen() {
                 onPress={() => router.push("/(auth)/login")}
                 style={styles.loginLink}
               >
-                <Text variant="body" color="primary" weight="600" align="center">
+                <Text variant="body" color="white" weight="600" align="center">
                   Ya tengo cuenta — Iniciar Sesión
                 </Text>
               </TouchableOpacity>
@@ -939,49 +954,24 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: Colors.primary500,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: Spacing.md,
     ...Shadows.floating,
   },
   welcomeTitle: {
-    marginBottom: Spacing.xs,
-  },
-  welcomeSubtitle: {
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-  },
-  welcomeText: {
-    marginBottom: Spacing.lg,
-    lineHeight: 20,
-    paddingHorizontal: Spacing.sm,
-  },
-  featureList: {
-    width: "100%",
-    backgroundColor: Colors.white,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
     marginBottom: Spacing.xl,
-    borderWidth: 1,
-    borderColor: Colors.gray100,
-    ...Shadows.card,
   },
-  featureItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.sm,
-  },
-  featureIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "rgba(77, 77, 255, 0.08)",
+  changingMessagesContainer: {
+    height: 80,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: Spacing.xl,
+    paddingHorizontal: Spacing.md,
   },
-  featureItemText: {
-    marginLeft: Spacing.sm,
+  changingMessageText: {
+    lineHeight: 24,
   },
   startButton: {
     width: "100%",
