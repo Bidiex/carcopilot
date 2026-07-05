@@ -2,15 +2,14 @@ import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   TouchableOpacity,
   Image,
   Dimensions,
   Animated,
   FlatList,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -21,6 +20,9 @@ import { formatPlate, validatePlate } from "@/lib/validation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Text } from "@/components/Typography";
 import { Input } from "@/components/Input";
+import { PlateInput } from "@/components/PlateInput";
+import { YearStepper } from "@/components/YearStepper";
+import { RadioGroup } from "@/components/RadioGroup";
 import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
@@ -147,7 +149,7 @@ export default function OnboardingScreen() {
   const [propulsion, setPropulsion] = useState<PropulsionType>("combustion");
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
-  const [year, setYear] = useState("");
+  const [year, setYear] = useState(getColombiaYear().toString());
   const [plate, setPlate] = useState("");
   const [odometer, setOdometer] = useState("");
   const [batteryCapacity, setBatteryCapacity] = useState("");
@@ -225,6 +227,13 @@ export default function OnboardingScreen() {
       }
     }
   }, [step, vehicleType, propulsion]);
+
+  useEffect(() => {
+    if (vehicleType === "moto" && fuelType === "diesel") {
+      setFuelType("gasoline");
+      setGasolineSubtype("corriente");
+    }
+  }, [vehicleType, fuelType]);
 
   const validateVehicleData = () => {
     let isValid = true;
@@ -481,10 +490,6 @@ export default function OnboardingScreen() {
       )}
       <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: step === 1 ? 'transparent' : Colors.primary500 }} />
       <SafeAreaView edges={["left", "right", "bottom"]} style={[styles.safeArea, step === 1 && { backgroundColor: 'transparent' }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
-      >
         {step > 1 && (
           <View style={styles.topHeader}>
             <TouchableOpacity activeOpacity={0.7} onPress={handlePrevStep} style={styles.backButton}>
@@ -495,12 +500,17 @@ export default function OnboardingScreen() {
           </View>
         )}
 
-        <ScrollView
+        <KeyboardAwareScrollView
+          style={styles.keyboardView}
           contentContainerStyle={[
             styles.scrollContainer,
             step === 1 && { justifyContent: "center", flexGrow: 1 },
           ]}
           showsVerticalScrollIndicator={false}
+          enableOnAndroid={true}
+          extraHeight={150}
+          extraScrollHeight={100}
+          keyboardShouldPersistTaps="handled"
         >
           {/* STEP 1: WELCOME SCREEN */}
           {step === 1 && (
@@ -689,37 +699,38 @@ export default function OnboardingScreen() {
                   error={modelError}
                 />
 
-                <View style={styles.rowInputs}>
-                  <View style={{ flex: 1, marginRight: Spacing.sm }}>
-                    <Input
-                      label="Año *"
-                      placeholder="Ej: 2022"
-                      value={year}
-                      onChangeText={setYear}
-                      keyboardType="numeric"
-                      error={yearError}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Input
-                      label={vehicleType === "moto" && propulsion === "electric" ? "Placa (Opcional)" : "Placa *"}
-                      placeholder={vehicleType === "car" ? "ABC123" : "ABC12A"}
-                      value={plate}
-                      onChangeText={(text) => setPlate(formatPlate(text, vehicleType))}
-                      autoCapitalize="characters"
-                      error={plateError}
-                    />
-                  </View>
+                <View style={{ marginBottom: Spacing.md }}>
+                  <Text variant="caption" color="gray700" weight="600" style={{ marginBottom: Spacing.xs }}>
+                    Año *
+                  </Text>
+                  <YearStepper
+                    minYear={1980}
+                    maxYear={getColombiaYear() + 1}
+                    value={parseInt(year) || getColombiaYear()}
+                    onChange={(val) => setYear(val.toString())}
+                  />
+                  {yearError ? (
+                    <Text variant="caption" color="error" style={{ marginTop: Spacing.xs }}>
+                      {yearError}
+                    </Text>
+                  ) : null}
                 </View>
+
+                <PlateInput
+                  label={vehicleType === "moto" && propulsion === "electric" ? "Placa" : "Placa *"}
+                  optional={vehicleType === "moto" && propulsion === "electric"}
+                  value={plate}
+                  onChange={(text) => setPlate(formatPlate(text, vehicleType))}
+                  error={plateError}
+                />
 
                 {propulsion === "combustion" && (
                   <>
-                    <Select
+                    <RadioGroup
                       label="Tipo de Combustible *"
-                      placeholder="Seleccionar tipo de combustible"
                       value={fuelType}
-                      options={FUEL_TYPES}
-                      onSelect={(val) => {
+                      options={vehicleType === "moto" ? FUEL_TYPES.filter(f => f.value !== "diesel") : FUEL_TYPES}
+                      onChange={(val) => {
                         setFuelType(val);
                         if (val === "diesel") {
                           setGasolineSubtype("");
@@ -727,15 +738,16 @@ export default function OnboardingScreen() {
                           setGasolineSubtype("corriente");
                         }
                       }}
+                      horizontal
                     />
 
                     {fuelType === "gasoline" && (
-                      <Select
+                      <RadioGroup
                         label="Subtipo de Gasolina *"
-                        placeholder="Seleccionar subtipo de gasolina"
                         value={gasolineSubtype}
                         options={GASOLINE_SUBTYPES}
-                        onSelect={setGasolineSubtype}
+                        onChange={setGasolineSubtype}
+                        horizontal
                       />
                     )}
                   </>
@@ -912,8 +924,7 @@ export default function OnboardingScreen() {
               />
             </View>
           )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
     </SafeAreaView>
     </View>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, forwardRef } from "react";
 import {
   TextInput as RNTextInput,
   View,
@@ -19,7 +19,7 @@ interface CustomInputProps extends TextInputProps {
   format?: 'currency' | 'number';
 }
 
-export const Input: React.FC<CustomInputProps> = ({
+export const Input = forwardRef<RNTextInput, CustomInputProps>(({
   label,
   error,
   leftIcon,
@@ -31,7 +31,7 @@ export const Input: React.FC<CustomInputProps> = ({
   value,
   onChangeText,
   ...props
-}) => {
+}, ref) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -64,7 +64,7 @@ export const Input: React.FC<CustomInputProps> = ({
   const isSecure = isPassword && !showPassword;
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} collapsable={false}>
       {label && (
         <Text variant="caption" color="gray600" style={styles.label}>
           {label}
@@ -72,6 +72,7 @@ export const Input: React.FC<CustomInputProps> = ({
       )}
       
       <View
+        collapsable={false}
         style={[
           styles.inputWrapper,
           isFocused && styles.inputWrapperFocused,
@@ -89,6 +90,7 @@ export const Input: React.FC<CustomInputProps> = ({
         )}
 
         <RNTextInput
+          ref={ref}
           style={[styles.textInput, style]}
           placeholderTextColor={Colors.gray400}
           secureTextEntry={isSecure}
@@ -120,7 +122,7 @@ export const Input: React.FC<CustomInputProps> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
