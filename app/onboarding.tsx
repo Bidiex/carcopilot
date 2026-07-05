@@ -465,17 +465,21 @@ export default function OnboardingScreen() {
   };
 
   const renderStepIndicator = () => {
+    // El stepper se muestra desde el paso 2 al 5 (4 pasos en total)
+    const percentage = Math.round(((step - 1) / 4) * 100);
     return (
-      <View style={styles.indicatorContainer}>
-        {[1, 2, 3, 4, 5].map((s) => (
-          <View
-            key={s}
-            style={[
-              styles.indicatorDot,
-              s <= step && styles.indicatorDotActive,
-            ]}
+      <View style={styles.progressHeaderContainer}>
+        <View style={styles.progressBarTrack}>
+          <LinearGradient
+            colors={[Colors.primary700, Colors.primary500]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.progressBarFill, { width: `${percentage}%` }]}
           />
-        ))}
+        </View>
+        <Text variant="smallLabel" color="#000000" weight="600" style={styles.progressText}>
+          {percentage}%
+        </Text>
       </View>
     );
   };
@@ -544,10 +548,10 @@ export default function OnboardingScreen() {
           {/* STEP 2: PROPULSION & VEHICLE TYPE (GAMIFIED CARDS) */}
           {step === 2 && (
             <View style={styles.formContainer}>
-              <Text variant="heading1" color="gray900" weight="700" style={styles.stepTitle}>
-                ¿Qué máquina conduces? ⚡
+              <Text variant="heading1" color="gray900" weight="700" align="center" style={styles.stepTitle}>
+                ¿Qué máquina conduces?
               </Text>
-              <Text variant="body" color="gray500" style={styles.stepSubtitle}>
+              <Text variant="body" color="gray500" align="center" style={styles.stepSubtitle}>
                 Elige el tipo de transporte y su motorización para adaptar las métricas y cálculos.
               </Text>
 
@@ -674,10 +678,10 @@ export default function OnboardingScreen() {
           {/* STEP 3: DETAILS */}
           {step === 3 && (
             <View style={styles.formContainer}>
-              <Text variant="heading1" color="gray900" weight="700" style={styles.stepTitle}>
-                ¡Excelente elección! 📝
+              <Text variant="heading1" color="gray900" weight="700" align="center" style={styles.stepTitle}>
+                ¡Excelente elección!
               </Text>
-              <Text variant="body" color="gray500" style={styles.stepSubtitle}>
+              <Text variant="body" color="gray500" align="center" style={styles.stepSubtitle}>
                 Completa los datos de tu máquina para registrarla correctamente.
               </Text>
 
@@ -786,10 +790,10 @@ export default function OnboardingScreen() {
           {/* STEP 4: CAROUSEL & COLORS */}
           {step === 4 && (
             <View style={styles.formContainer}>
-              <Text variant="heading1" color="gray900" weight="700" style={styles.stepTitle}>
-                Personaliza tu Vehículo 🎨
+              <Text variant="heading1" color="gray900" weight="700" align="center" style={styles.stepTitle}>
+                Personaliza tu Vehículo
               </Text>
-              <Text variant="body" color="gray500" style={styles.stepSubtitle}>
+              <Text variant="body" color="gray500" align="center" style={styles.stepSubtitle}>
                 Selecciona la silueta y el color que más se parezca a tu máquina real.
               </Text>
 
@@ -866,10 +870,10 @@ export default function OnboardingScreen() {
           {/* STEP 5: SIGN UP */}
           {step === 5 && (
             <View style={styles.formContainer}>
-              <Text variant="heading1" color="gray900" weight="700" style={styles.stepTitle}>
-                ¡Casi listo! 🔐 Crea tu Cuenta
+              <Text variant="heading1" color="gray900" weight="700" align="center" style={styles.stepTitle}>
+                ¡Casi listo! Crea tu Cuenta
               </Text>
-              <Text variant="body" color="gray500" style={styles.stepSubtitle}>
+              <Text variant="body" color="gray500" align="center" style={styles.stepSubtitle}>
                 Crea tu acceso para sincronizar y guardar tu nuevo garaje digital.
               </Text>
 
@@ -952,19 +956,27 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "flex-start",
   },
-  indicatorContainer: {
+  progressHeaderContainer: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    marginHorizontal: Spacing.md,
   },
-  indicatorDot: {
-    width: 24,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.gray300,
+  progressBarTrack: {
+    flex: 1,
+    height: 8,
+    backgroundColor: Colors.gray200,
+    borderRadius: 4,
+    overflow: "hidden",
   },
-  indicatorDotActive: {
-    backgroundColor: Colors.primary500,
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  progressText: {
+    marginLeft: Spacing.sm,
+    width: 36,
+    textAlign: "right",
   },
   scrollContainer: {
     paddingHorizontal: Layout.screenPadding,

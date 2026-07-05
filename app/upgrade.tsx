@@ -5,18 +5,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Car,
-  Bell,
-  Mic,
-  Tag,
-  Check,
-  ChevronLeft,
-} from 'lucide-react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/Typography';
 import { Button } from '@/components/Button';
@@ -25,22 +18,18 @@ import { useAlert } from '@/context/AlertContext';
 
 const BENEFITS = [
   {
-    icon: Car,
     title: 'Vehículos ilimitados',
     description: 'Registra y gestiona toda tu flota sin restricciones.',
   },
   {
-    icon: Tag,
     title: 'Todas las categorías de gasto',
     description: 'Combustible, eléctrico, talleres, impuestos y más.',
   },
   {
-    icon: Bell,
     title: 'Alertas de vencimiento',
     description: 'SOAT, tecnomecánica, impuestos — nunca más te olvides.',
   },
   {
-    icon: Mic,
     title: 'Asistente de IA con voz',
     description: 'Registra gastos hablando, sin tocar el teléfono.',
   },
@@ -74,126 +63,82 @@ export default function UpgradeScreen() {
 
   return (
     <View style={styles.container}>
+      <ImageBackground
+        source={require('@/assets/images/upgrade_bg.webp')}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+      />
+      {/* Premium dark gradient overlay */}
       <LinearGradient
-        colors={[Colors.gradientStart, Colors.gradientEnd]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      >
-        <SafeAreaView edges={['top']}>
-          {/* Back button */}
+        colors={['rgba(15, 15, 26, 0.45)', 'rgba(15, 15, 26, 0.85)', 'rgba(15, 15, 26, 0.98)']}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        {/* Top Header Controls */}
+        <View style={styles.topHeader}>
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => router.back()}
-            style={styles.backButton}
+            style={styles.closeButton}
           >
-            <ChevronLeft size={24} color={Colors.white} strokeWidth={2} />
+            <Ionicons name="close-outline" size={28} color={Colors.white} />
           </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleSubscribe}
+            style={styles.restoreButton}
+          >
+            <Text variant="body" color="white" weight="600">
+              Restaurar
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.headerContent}>
-            <Text
-              variant="smallLabel"
-              color="white"
-              weight="600"
-              style={styles.proLabel}
-            >
-              COPILOTO PRO
-            </Text>
-            <Text variant="heading1" color="white" weight="700" align="center">
-              La mejor herramienta para{'\n'}gestionar tu vehículo
-            </Text>
-            <Text
-              variant="body"
-              color="white"
-              align="center"
-              style={styles.headerSubtitle}
-            >
-              Todo lo que necesitas para llevar el control total de tus gastos de transporte.
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Main Title / Brand Header */}
+          <View style={styles.brandContainer}>
+            <View style={styles.logoRow}>
+              <Text variant="display" color="white" weight="700" style={styles.brandTitle}>
+                CarCopilot
+              </Text>
+              <View style={styles.proBadge}>
+                <Text variant="caption" color="white" weight="700" style={styles.proBadgeText}>
+                  PRO
+                </Text>
+              </View>
+            </View>
+            <Text variant="heading2" color="white" weight="500" align="center" style={styles.brandSubtitle}>
+              Lleva el control inteligente y mecánico de tu vehículo
             </Text>
           </View>
-        </SafeAreaView>
-      </LinearGradient>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Beneficios */}
-        <View style={styles.section}>
-          <Text variant="heading2" color="gray900" weight="700" style={styles.sectionTitle}>
-            Todo incluido en Pro
-          </Text>
-
-          <View style={styles.benefitsList}>
-            {BENEFITS.map(({ icon: Icon, title, description }) => (
-              <View key={title} style={styles.benefitRow}>
-                <View style={styles.checkCircle}>
-                  <Check size={14} color={Colors.white} strokeWidth={2.5} />
+          {/* Feature List (Checkmark checklist style) */}
+          <View style={styles.featuresContainer}>
+            {BENEFITS.map(({ title, description }) => (
+              <View key={title} style={styles.featureRow}>
+                <View style={styles.checkIconWrapper}>
+                  <Ionicons name="checkmark-circle-outline" size={22} color={Colors.primary500} />
                 </View>
-                <View style={styles.benefitTexts}>
-                  <Text variant="body" color="gray900" weight="600">
+                <View style={styles.featureTexts}>
+                  <Text variant="body" color="white" weight="600">
                     {title}
                   </Text>
-                  <Text variant="caption" color="gray500" style={styles.benefitDesc}>
+                  <Text variant="caption" color="gray400" style={styles.featureDesc}>
                     {description}
                   </Text>
                 </View>
-                <Icon size={20} color={Colors.primary500} strokeWidth={1.5} />
               </View>
             ))}
           </View>
-        </View>
 
-        {/* Selector de planes */}
-        <View style={styles.section}>
-          <Text variant="heading2" color="gray900" weight="700" style={styles.sectionTitle}>
-            Elige tu plan
-          </Text>
-
+          {/* Pricing options (2 parallel cards) */}
           <View style={styles.plansContainer}>
-            {/* Plan Anual (primero, preseleccionado) */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={[
-                styles.planCard,
-                selectedPlan === 'annual' && styles.planCardActive,
-              ]}
-              onPress={() => setSelectedPlan('annual')}
-            >
-              <View style={styles.planCardInner}>
-                <View style={styles.planInfo}>
-                  <View style={styles.planTitleRow}>
-                    <Text variant="body" color="gray900" weight="700">
-                      Anual
-                    </Text>
-                    <View style={styles.saveBadge}>
-                      <Text variant="smallLabel" color="white" weight="700">
-                        Ahorra 33%
-                      </Text>
-                    </View>
-                  </View>
-                  <Text variant="caption" color="gray500">
-                    ~$9.992/mes · Sin compromisos
-                  </Text>
-                </View>
-                <View style={styles.planPriceBlock}>
-                  <Text variant="heading2" color="gray900" weight="700">
-                    $119.900
-                  </Text>
-                  <Text variant="caption" color="gray500">
-                    /año
-                  </Text>
-                </View>
-              </View>
-              {selectedPlan === 'annual' && (
-                <View style={styles.selectedBadge}>
-                  <Ionicons name="checkmark" size={14} color={Colors.white} />
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {/* Plan Mensual */}
+            {/* Box 1: Monthly */}
             <TouchableOpacity
               activeOpacity={0.85}
               style={[
@@ -202,50 +147,80 @@ export default function UpgradeScreen() {
               ]}
               onPress={() => setSelectedPlan('monthly')}
             >
-              <View style={styles.planCardInner}>
-                <View style={styles.planInfo}>
-                  <Text variant="body" color="gray900" weight="700">
-                    Mensual
-                  </Text>
-                  <Text variant="caption" color="gray500">
-                    Flexibilidad total
-                  </Text>
+              <View style={styles.planCardHeader}>
+                <Text variant="body" color="white" weight="600">
+                  Mensual
+                </Text>
+              </View>
+              <View style={styles.planCardBody}>
+                <Text variant="heading1" color="white" weight="700" style={styles.priceText}>
+                  $14.900
+                </Text>
+                <Text variant="caption" color="gray400" style={styles.planBillingText}>
+                  Facturado mensual
+                </Text>
+              </View>
+              {selectedPlan === 'monthly' && (
+                <View style={styles.selectedCheckBadge}>
+                  <Ionicons name="checkmark" size={12} color={Colors.white} />
                 </View>
-                <View style={styles.planPriceBlock}>
-                  <Text variant="heading2" color="gray900" weight="700">
-                    $14.900
-                  </Text>
-                  <Text variant="caption" color="gray500">
-                    /mes
+              )}
+            </TouchableOpacity>
+
+            {/* Box 2: Annual */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.planCard,
+                selectedPlan === 'annual' && styles.planCardActive,
+              ]}
+              onPress={() => setSelectedPlan('annual')}
+            >
+              <View style={styles.planCardHeader}>
+                <Text variant="body" color="white" weight="600">
+                  Anual
+                </Text>
+                <View style={styles.saveBadge}>
+                  <Text variant="smallLabel" color="white" weight="700" style={styles.saveBadgeText}>
+                    Ahorra 33%
                   </Text>
                 </View>
               </View>
-              {selectedPlan === 'monthly' && (
-                <View style={styles.selectedBadge}>
-                  <Ionicons name="checkmark" size={14} color={Colors.white} />
+              <View style={styles.planCardBody}>
+                <Text variant="heading1" color="white" weight="700" style={styles.priceText}>
+                  $119.900
+                </Text>
+                <Text variant="caption" color="gray400" style={styles.planBillingText}>
+                  ~$9.992 / mes
+                </Text>
+              </View>
+              {selectedPlan === 'annual' && (
+                <View style={styles.selectedCheckBadge}>
+                  <Ionicons name="checkmark" size={12} color={Colors.white} />
                 </View>
               )}
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* CTA */}
-        <Button
-          title={`Suscribirme al plan ${selectedPlan === 'annual' ? 'Anual' : 'Mensual'}`}
-          onPress={handleSubscribe}
-          style={styles.ctaButton}
-        />
-
-        {/* Nota legal */}
-        <Text
-          variant="caption"
-          color="gray500"
-          align="center"
-          style={styles.legalNote}
-        >
-          Cancela cuando quieras. El pago en línea estará disponible muy pronto.
-        </Text>
-      </ScrollView>
+          {/* CTA Button & Legal text */}
+          <View style={styles.ctaContainer}>
+            <Button
+              title="Suscribirme"
+              onPress={handleSubscribe}
+              icon="chevron-forward"
+              style={styles.ctaButton}
+            />
+            <Text
+              variant="caption"
+              color="gray400"
+              align="center"
+              style={styles.legalNote}
+            >
+              Cancela cuando quieras. El pago en línea estará disponible muy pronto.
+            </Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   );
 }
@@ -253,134 +228,149 @@ export default function UpgradeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.gray50,
+    backgroundColor: '#0F0F1A',
   },
-  headerGradient: {
-    paddingBottom: Spacing.xl,
+  safeArea: {
+    flex: 1,
   },
-  backButton: {
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+  topHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  headerContent: {
     paddingHorizontal: Layout.screenPadding,
-    paddingTop: Spacing.md,
-    alignItems: 'center',
-    gap: Spacing.sm,
+    height: 56,
   },
-  proLabel: {
-    letterSpacing: 1.5,
-    opacity: 0.85,
+  closeButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
-  headerSubtitle: {
-    opacity: 0.9,
-    lineHeight: 22,
+  restoreButton: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    height: 44,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: Layout.screenPadding,
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.md,
     paddingBottom: Spacing.xxl,
   },
-  section: {
+  brandContainer: {
+    alignItems: 'center',
     marginBottom: Spacing.xl,
   },
-  sectionTitle: {
-    marginBottom: Spacing.md,
-  },
-  benefitsList: {
-    backgroundColor: Colors.white,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.gray200,
-    overflow: 'hidden',
-    ...Shadows.card,
-  },
-  benefitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.md,
-    gap: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray100,
-  },
-  checkCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: Colors.primary500,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  benefitTexts: {
-    flex: 1,
-  },
-  benefitDesc: {
-    marginTop: 2,
-    lineHeight: 16,
-  },
-  plansContainer: {
-    gap: Spacing.sm,
-  },
-  planCard: {
-    backgroundColor: Colors.white,
-    borderRadius: Radius.md,
-    borderWidth: 2,
-    borderColor: Colors.gray200,
-    padding: Spacing.md,
-    position: 'relative',
-    ...Shadows.card,
-  },
-  planCardActive: {
-    borderColor: Colors.primary500,
-    backgroundColor: Colors.primary50,
-  },
-  planCardInner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  planInfo: {
-    gap: 2,
-  },
-  planTitleRow: {
+  logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
   },
+  brandTitle: {
+    fontStyle: 'italic',
+  },
+  proBadge: {
+    backgroundColor: Colors.primary500,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 2,
+  },
+  proBadgeText: {
+    fontSize: 10,
+  },
+  brandSubtitle: {
+    marginTop: Spacing.xs,
+    opacity: 0.85,
+    paddingHorizontal: Spacing.md,
+  },
+  featuresContainer: {
+    marginBottom: Spacing.xxl,
+    gap: Spacing.md,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+  },
+  checkIconWrapper: {
+    marginTop: 2,
+  },
+  featureTexts: {
+    flex: 1,
+  },
+  featureDesc: {
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  plansContainer: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.xxl,
+  },
+  planCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    padding: Spacing.md,
+    justifyContent: 'space-between',
+    minHeight: 160,
+    position: 'relative',
+  },
+  planCardActive: {
+    borderColor: Colors.primary500,
+    backgroundColor: 'rgba(77, 77, 255, 0.08)',
+  },
+  planCardHeader: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  planCardBody: {
+    gap: 2,
+    marginTop: Spacing.sm,
+  },
+  priceText: {
+    fontSize: 22,
+  },
+  planBillingText: {
+    fontSize: 11,
+    opacity: 0.8,
+  },
   saveBadge: {
-    backgroundColor: Colors.success,
+    backgroundColor: Colors.primary500,
     paddingHorizontal: Spacing.xs,
     paddingVertical: 2,
     borderRadius: Radius.full,
   },
-  planPriceBlock: {
-    alignItems: 'flex-end',
+  saveBadgeText: {
+    fontSize: 8,
   },
-  selectedBadge: {
+  selectedCheckBadge: {
     position: 'absolute',
     top: -8,
     right: -8,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: Colors.primary500,
     justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    ...Shadows.sm,
+  },
+  ctaContainer: {
+    gap: Spacing.md,
     alignItems: 'center',
   },
   ctaButton: {
     width: '100%',
-    marginBottom: Spacing.md,
   },
   legalNote: {
     lineHeight: 18,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
   },
 });
