@@ -56,7 +56,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Obtener sesión inicial y manejar estado de carga
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        // console.error("Error al obtener sesión:", error.message);
+        await supabase.auth.signOut();
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {

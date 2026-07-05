@@ -26,7 +26,7 @@ import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius, Shadows } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useAlert } from "@/context/AlertContext";
-import { VEHICLE_MODELS, VEHICLE_IMAGES, CAR_COLORS } from "@/constants/vehicles";
+import { VEHICLE_MODELS, VEHICLE_IMAGES, CAR_COLORS, BIKE_MODELS, BIKE_IMAGES, BIKE_COLORS } from "@/constants/vehicles";
 import { scheduleWelcomeNotification } from "@/lib/notifications";
 
 const { width } = Dimensions.get("window");
@@ -215,6 +215,14 @@ export default function OnboardingScreen() {
     if (step === 2) {
       animateSelection(vehicleType);
       animateSelection(propulsion);
+    } else if (step === 4) {
+      if (vehicleType === "moto") {
+        setSelectedModelId(BIKE_MODELS[0].id);
+        setSelectedColor(BIKE_MODELS[0].colors[0]);
+      } else {
+        setSelectedModelId(VEHICLE_MODELS[0].id);
+        setSelectedColor(VEHICLE_MODELS[0].colors[0]);
+      }
     }
   }, [step, vehicleType, propulsion]);
 
@@ -373,6 +381,9 @@ export default function OnboardingScreen() {
         setLoading(false);
         return;
       }
+
+      // Limpiar datos temporales por si quedaron de intentos anteriores
+      await AsyncStorage.removeItem("temp_onboarding_vehicle");
 
       if (data.session && data.user) {
         const { error: vehicleError } = await supabase.from("vehicles").insert({
@@ -772,7 +783,7 @@ export default function OnboardingScreen() {
 
               <View style={styles.carouselWrapper}>
                 <FlatList
-                  data={VEHICLE_MODELS}
+                  data={vehicleType === 'car' ? VEHICLE_MODELS : BIKE_MODELS}
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   snapToInterval={width * 0.8 + Spacing.md}
@@ -783,6 +794,8 @@ export default function OnboardingScreen() {
                     const isSelected = selectedModelId === item.id;
                     const currentColor = isSelected ? selectedColor : item.colors[0];
                     const imageKey = `${item.id}_${currentColor}.webp`;
+                    const currentImagesList = vehicleType === 'car' ? VEHICLE_IMAGES : BIKE_IMAGES;
+                    const currentColorsList = vehicleType === 'car' ? CAR_COLORS : BIKE_COLORS;
 
                     return (
                       <TouchableOpacity
@@ -796,7 +809,7 @@ export default function OnboardingScreen() {
                         }}
                       >
                         <View style={styles.carouselImageContainer}>
-                          <Image source={VEHICLE_IMAGES[imageKey]} style={styles.carouselImage} />
+                          <Image source={currentImagesList[imageKey]} style={styles.carouselImage} />
                         </View>
                         <Text variant="heading2" color={isSelected ? "primary500" : "gray700"} weight={isSelected ? "700" : "600"} align="center" style={styles.carouselModelName}>
                           {item.name}
@@ -808,7 +821,7 @@ export default function OnboardingScreen() {
                               key={color}
                               style={[
                                 styles.colorDot,
-                                { backgroundColor: CAR_COLORS[color] },
+                                { backgroundColor: currentColorsList[color] },
                                 (isSelected && selectedColor === color) && styles.colorDotSelected
                               ]}
                               onPress={() => {
