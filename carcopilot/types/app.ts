@@ -60,3 +60,19 @@ export type MaintenanceLog = {
 };
 
 export type NewMaintenanceLog = Omit<MaintenanceLog, 'id' | 'created_at'>;
+
+export type PromoSplash = {
+  id: string
+  internal_title: string
+  image_url: string
+  cta_text: string | null
+  cta_destination: string | null
+  learn_more_text: string | null
+  learn_more_url: string | null
+  frequency: 'always' | 'once_per_user'
+  start_date: string
+  end_date: string
+  status: 'active' | 'draft' | 'archived'
+  created_at: string
+  created_by: string | null
+}

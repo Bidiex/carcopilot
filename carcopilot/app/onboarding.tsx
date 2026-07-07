@@ -5,6 +5,7 @@ import {
   Platform,
   TouchableOpacity,
   Image,
+  ImageBackground,
   Dimensions,
   Animated,
   FlatList,
@@ -98,44 +99,6 @@ const GASOLINE_SUBTYPES = [
   { label: "Extra (Premium)", value: "extra" },
 ];
 
-const ONBOARDING_MESSAGES = [
-  "Monitorea consumos reales de combustible...",
-  "Recordatorios automáticos de SOAT e Impuestos...",
-  "Registra gastos cómodamente usando tu voz...",
-  "Tu copiloto inteligente para el cuidado de tu vehículo...",
-  "Mantén el historial mecánico siempre a la mano..."
-];
-
-const ChangingMessages = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const opacity = useState(new Animated.Value(1))[0];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }).start(() => {
-        setCurrentIndex((prev) => (prev + 1) % ONBOARDING_MESSAGES.length);
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }).start();
-      });
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [opacity]);
-
-  return (
-    <Animated.View style={[styles.changingMessagesContainer, { opacity }]}>
-      <Text variant="body" color="white" weight="500" align="center" style={styles.changingMessageText}>
-        {ONBOARDING_MESSAGES[currentIndex]}
-      </Text>
-    </Animated.View>
-  );
-};
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -486,12 +449,6 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
-      {step === 1 && (
-        <LinearGradient
-          colors={[Colors.primary500, Colors.primary900]}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
       <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: step === 1 ? 'transparent' : Colors.primary500 }} />
       <SafeAreaView edges={["left", "right", "bottom"]} style={[styles.safeArea, step === 1 && { backgroundColor: 'transparent' }]}>
         {step > 1 && (
@@ -508,7 +465,7 @@ export default function OnboardingScreen() {
           style={styles.keyboardView}
           contentContainerStyle={[
             styles.scrollContainer,
-            step === 1 && { justifyContent: "center", flexGrow: 1 },
+            step === 1 && { paddingHorizontal: 0, paddingBottom: 0, flexGrow: 1 },
           ]}
           showsVerticalScrollIndicator={false}
           enableOnAndroid={true}
@@ -518,31 +475,29 @@ export default function OnboardingScreen() {
         >
           {/* STEP 1: WELCOME SCREEN */}
           {step === 1 && (
-            <View style={styles.welcomeContainer}>
-              <View style={styles.illustrationCircle}>
-                <Ionicons name="car-outline" size={56} color={Colors.white} />
+            <ImageBackground
+              source={require("../assets/backgrounds/welcome_screen_bg.webp")}
+              style={styles.welcomeBackground}
+              resizeMode="cover"
+            >
+              <View style={styles.welcomeOverlay} />
+              <View style={styles.welcomeBottomContent}>
+                <Button
+                  title="Configurar mi Vehículo"
+                  onPress={() => setStep(2)}
+                  style={styles.startButton}
+                />
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => router.push("/(auth)/login")}
+                  style={styles.loginLink}
+                >
+                  <Text variant="body" color="white" weight="600" align="center">
+                    Ya tengo cuenta — Iniciar Sesión
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <Text variant="display" color="white" weight="700" align="center" style={[styles.welcomeTitle, { fontStyle: 'italic' }]}>
-                CarCopilot
-              </Text>
-
-              <ChangingMessages />
-
-              <Button
-                title="Configurar mi Vehículo"
-                onPress={() => setStep(2)}
-                style={styles.startButton}
-              />
-
-              <TouchableOpacity activeOpacity={0.7}
-                onPress={() => router.push("/(auth)/login")}
-                style={styles.loginLink}
-              >
-                <Text variant="body" color="white" weight="600" align="center">
-                  Ya tengo cuenta — Iniciar Sesión
-                </Text>
-              </TouchableOpacity>
-            </View>
+            </ImageBackground>
           )}
 
           {/* STEP 2: PROPULSION & VEHICLE TYPE (GAMIFIED CARDS) */}
@@ -982,32 +937,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.screenPadding,
     paddingBottom: Spacing.xl,
   },
-  welcomeContainer: {
+  welcomeBackground: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "flex-end",
+  },
+  welcomeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
+  },
+  welcomeBottomContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xxl,
     alignItems: "center",
-    paddingVertical: Spacing.lg,
-  },
-  illustrationCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: Spacing.md,
-    ...Shadows.floating,
-  },
-  welcomeTitle: {
-    marginBottom: Spacing.xl,
-  },
-  changingMessagesContainer: {
-    height: 80,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: Spacing.xl,
-    paddingHorizontal: Spacing.md,
-  },
-  changingMessageText: {
-    lineHeight: 24,
+    width: "100%",
   },
   startButton: {
     width: "100%",

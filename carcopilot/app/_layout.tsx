@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AlertProvider } from "@/context/AlertContext";
@@ -14,14 +14,25 @@ import { supabase } from "@/lib/supabase";
 import { requestNotificationPermissions } from "@/lib/notifications";
 import { StatusBar } from "expo-status-bar";
 import { Colors } from "@/constants/theme";
+import { PromoSplashOverlay } from "@/components/PromoSplashOverlay";
+import { getActiveSplash, markSplashAsViewed } from "@/utils/getActiveSplash";
+import type { PromoSplash } from "@/types/app";
 
 function RootNavigator() {
   const { session, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const [activeSplash, setActiveSplash] = useState<PromoSplash | null>(null);
+  const splashCheckedRef = useRef(false);
 
   useEffect(() => {
     if (isLoading) return;
+
+    // Verificar splash UNA SOLA VEZ por apertura de la app
+    if (!splashCheckedRef.current) {
+      splashCheckedRef.current = true;
+      getActiveSplash(session?.user?.id ?? null).then(setActiveSplash);
+    }
 
     const inAuthGroup = segments[0] === "(auth)";
     const inOnboarding = segments[0] === "onboarding";
@@ -36,7 +47,7 @@ function RootNavigator() {
           const tempVal = await AsyncStorage.getItem("temp_onboarding_vehicle");
           if (tempVal) {
             const vData = JSON.parse(tempVal);
-            
+
             // Verificar si el usuario ya tiene algún vehículo para evitar duplicar
             const { data: existingVhs } = await supabase
               .from("vehicles")
@@ -75,13 +86,23 @@ function RootNavigator() {
     }
   }, [session, isLoading, segments, router]);
 
+  function handleCloseSplash() {
+    if (activeSplash && activeSplash.frequency === 'once_per_user' && session?.user?.id) {
+      markSplashAsViewed(activeSplash.id, session.user.id);
+    }
+    setActiveSplash(null);
+  }
+
   if (isLoading) {
     // Evita parpadeo mientras se recupera la sesión inicial
     return null;
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }} />
+    <>
+      <Stack screenOptions={{ headerShown: false }} />
+      <PromoSplashOverlay splash={activeSplash} onClose={handleCloseSplash} />
+    </>
   );
 }
 
