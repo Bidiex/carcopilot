@@ -16,6 +16,13 @@ export interface AppNotification {
   recipient_count: number;
   created_by: string;
   created_at: string;
+  recurrence_type?: 'once' | 'daily' | 'weekly';
+  send_time?: string | null;
+  send_day_of_week?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  next_send_at?: string | null;
+  last_sent_at?: string | null;
 }
 
 export function useNotifications() {
@@ -61,10 +68,25 @@ export function useNotifications() {
     }
   };
 
+  const sendNotificationNow = async (notificationId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-notification', {
+        body: { notification_id: notificationId }
+      });
+      if (error) throw error;
+      await fetchNotifications();
+      return { success: true, sent: data?.sent || 0 };
+    } catch (error) {
+      console.error('Error sending notification manually:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  };
+
   return {
     notifications,
     loading,
     createNotification,
+    sendNotificationNow,
     refresh: fetchNotifications
   };
 }

@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Table } from '../components/ui/Table';
 import type { Column } from '../components/ui/Table';
+import { Modal } from '../components/ui/Modal';
 import { usePromoSplashes } from '../hooks/usePromoSplashes';
 import type { PromoSplash } from '../types/database';
 import { Plus, Trash2 } from 'lucide-react';
@@ -14,12 +15,22 @@ export function PromoSplashes() {
   const navigate = useNavigate();
   const { splashes, loading, deleteSplash } = usePromoSplashes();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [splashToDelete, setSplashToDelete] = useState<string | null>(null);
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este Splash Promocional?')) {
-      setDeletingId(id);
-      await deleteSplash(id);
+  const confirmDelete = (id: string) => {
+    setSplashToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const executeDelete = async () => {
+    if (splashToDelete) {
+      setDeletingId(splashToDelete);
+      setDeleteModalOpen(false);
+      await deleteSplash(splashToDelete);
       setDeletingId(null);
+      setSplashToDelete(null);
     }
   };
 
@@ -64,7 +75,7 @@ export function PromoSplashes() {
           <Button 
             variant="danger" 
             size="sm" 
-            onClick={() => handleDelete(splash.id)}
+            onClick={() => confirmDelete(splash.id)}
             disabled={deletingId === splash.id}
           >
             <Trash2 size={16} />
@@ -95,6 +106,24 @@ export function PromoSplashes() {
           </div>
         )}
       </Card>
+
+      <Modal 
+        isOpen={deleteModalOpen} 
+        onClose={() => setDeleteModalOpen(false)} 
+        title="Eliminar Splash Promocional"
+      >
+        <p className="text-gray-600 mb-6">
+          ¿Estás seguro de que deseas eliminar este Splash Promocional? Esta acción no se puede deshacer.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>
+            Cancelar
+          </Button>
+          <Button variant="danger" onClick={executeDelete}>
+            Eliminar
+          </Button>
+        </div>
+      </Modal>
     </AdminLayout>
   );
 }

@@ -132,7 +132,7 @@ export default function LoginScreen() {
                 variant="body"
                 color="primary"
                 weight="600"
-                onPress={() => router.push("/(auth)/signup")}
+                onPress={() => router.replace({ pathname: "/onboarding", params: { step: "2" } })}
               >
                 Regístrate
               </Text>

@@ -19,7 +19,11 @@ export function NotificationNew() {
   const [destinationType, setDestinationType] = useState<'app_screen' | 'external_url' | 'none'>('none');
   const [destinationValue, setDestinationValue] = useState('');
   const [isScheduled, setIsScheduled] = useState(false);
-  const [scheduledAt, setScheduledAt] = useState('');
+  const [recurrenceType, setRecurrenceType] = useState<'once' | 'daily' | 'weekly'>('once');
+  const [sendTime, setSendTime] = useState('');
+  const [sendDayOfWeek, setSendDayOfWeek] = useState(0);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +36,11 @@ export function NotificationNew() {
       segment,
       destination_type: destinationType,
       destination_value: destinationType !== 'none' ? destinationValue : null,
-      scheduled_at: isScheduled && scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      recurrence_type: isScheduled ? recurrenceType : 'once',
+      send_time: isScheduled && sendTime ? sendTime : null,
+      send_day_of_week: isScheduled && recurrenceType === 'weekly' ? sendDayOfWeek : null,
+      start_date: isScheduled && startDate ? startDate : null,
+      end_date: isScheduled && endDate ? endDate : null,
       status: isScheduled ? 'scheduled' : 'draft', // By default draft if not scheduled, since send is separate
     });
 
@@ -140,17 +148,72 @@ export function NotificationNew() {
                   onChange={e => setIsScheduled(e.target.checked)}
                   className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
                 />
-                <span className="ml-2 text-sm text-gray-700">Programar envío para después</span>
+                <span className="ml-2 text-sm text-gray-700">Programar envío de campaña</span>
               </label>
 
               {isScheduled && (
-                <Input 
-                  type="datetime-local" 
-                  label="Fecha y hora de envío" 
-                  value={scheduledAt} 
-                  onChange={e => setScheduledAt(e.target.value)} 
-                  required
-                />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de recurrencia</label>
+                      <select 
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                        value={recurrenceType}
+                        onChange={(e: any) => setRecurrenceType(e.target.value)}
+                      >
+                        <option value="once">Una vez</option>
+                        <option value="daily">Diaria</option>
+                        <option value="weekly">Semanal</option>
+                      </select>
+                    </div>
+
+                    {recurrenceType === 'weekly' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Día de la semana</label>
+                        <select 
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                          value={sendDayOfWeek}
+                          onChange={(e: any) => setSendDayOfWeek(Number(e.target.value))}
+                        >
+                          <option value={0}>Domingo</option>
+                          <option value={1}>Lunes</option>
+                          <option value={2}>Martes</option>
+                          <option value={3}>Miércoles</option>
+                          <option value={4}>Jueves</option>
+                          <option value={5}>Viernes</option>
+                          <option value={6}>Sábado</option>
+                        </select>
+                      </div>
+                    )}
+
+                    <div>
+                      <Input 
+                        type="time" 
+                        label="Hora de envío" 
+                        value={sendTime} 
+                        onChange={e => setSendTime(e.target.value)} 
+                        required={isScheduled}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input 
+                      type="date" 
+                      label="Vigencia Desde" 
+                      value={startDate} 
+                      onChange={e => setStartDate(e.target.value)} 
+                      required={isScheduled}
+                    />
+                    <Input 
+                      type="date" 
+                      label="Vigencia Hasta" 
+                      value={endDate} 
+                      onChange={e => setEndDate(e.target.value)} 
+                      required={isScheduled}
+                    />
+                  </div>
+                </div>
               )}
             </div>
 

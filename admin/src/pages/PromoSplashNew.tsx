@@ -4,6 +4,7 @@ import { AdminLayout } from '../components/layout/AdminLayout';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 import { usePromoSplashes } from '../hooks/usePromoSplashes';
 import { ArrowLeft, Upload, ExternalLink } from 'lucide-react';
 
@@ -11,6 +12,8 @@ export function PromoSplashNew() {
   const navigate = useNavigate();
   const { createSplash, uploadImage } = usePromoSplashes();
   
+  const [alertModal, setAlertModal] = useState<{isOpen: boolean, title: string, message: string}>({isOpen: false, title: '', message: ''});
+
   const [internalTitle, setInternalTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -36,7 +39,7 @@ export function PromoSplashNew() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageFile || !internalTitle || !startDate || !endDate) {
-      alert('Por favor completa los campos obligatorios y sube una imagen.');
+      setAlertModal({isOpen: true, title: 'Atención', message: 'Por favor completa los campos obligatorios y sube una imagen.'});
       return;
     }
 
@@ -60,7 +63,7 @@ export function PromoSplashNew() {
       navigate('/promo-splashes');
     } catch (error) {
       console.error(error);
-      alert('Error al guardar el splash promocional.');
+      setAlertModal({isOpen: true, title: 'Error', message: 'Error al guardar el splash promocional.'});
     } finally {
       setSaving(false);
     }
@@ -220,6 +223,19 @@ export function PromoSplashNew() {
           </div>
         </div>
       </div>
+
+      <Modal 
+        isOpen={alertModal.isOpen} 
+        onClose={() => setAlertModal({...alertModal, isOpen: false})} 
+        title={alertModal.title}
+      >
+        <p className="text-gray-600 mb-6">{alertModal.message}</p>
+        <div className="flex justify-end">
+          <Button onClick={() => setAlertModal({...alertModal, isOpen: false})}>
+            Entendido
+          </Button>
+        </div>
+      </Modal>
     </AdminLayout>
   );
 }

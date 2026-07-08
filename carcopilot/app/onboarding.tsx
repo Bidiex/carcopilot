@@ -13,7 +13,8 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { getColombiaYear } from "@/lib/date";
@@ -102,9 +103,10 @@ const GASOLINE_SUBTYPES = [
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { showAlert } = useAlert();
   const { refreshProfile } = useAuth();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(params.step ? parseInt(params.step as string, 10) : 1);
   const [loading, setLoading] = useState(false);
 
   // Vehicle Info (Step 2 & 3)
@@ -448,8 +450,11 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: step === 1 ? 'transparent' : Colors.primary500 }} />
+    <View style={[styles.container, step === 1 && { backgroundColor: 'transparent' }]}>
+      {step === 1 && <StatusBar style="light" backgroundColor="transparent" translucent />}
+      {step > 1 && (
+        <SafeAreaView edges={["top"]} style={{ flex: 0, backgroundColor: Colors.primary500 }} />
+      )}
       <SafeAreaView edges={["left", "right", "bottom"]} style={[styles.safeArea, step === 1 && { backgroundColor: 'transparent' }]}>
         {step > 1 && (
           <View style={styles.topHeader}>
