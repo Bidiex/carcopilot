@@ -14,6 +14,8 @@ import { supabase } from '@/lib/supabase';
 import { processUserMessage, ConversationMessage, UserContext } from '@/lib/ai';
 import { AnimatedOrb, OrbState } from '@/components/AnimatedOrb';
 import { IdleOrbRing } from '@/components/IdleOrbRing';
+import { useActionGuard } from '@/hooks/useActionGuard';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 const REQUIRED_PARAMS: Record<string, string[]> = {
   registrar_gasolina: ['vehiculo_id', 'precio_total', 'odometro'],
@@ -52,8 +54,9 @@ export default function AIScreen() {
   const [vehiclesData, setVehiclesData] = useState<any[]>([]);
   const [activeVehicleIndex, setActiveVehicleIndex] = useState<number>(0);
   
-  const { session, planStatus, trialDaysRemaining } = useAuth();
-  const trialExpired = planStatus !== 'trial' && planStatus !== 'pro';
+  const { session, accessStatus, trialDaysRemaining } = useAuth();
+  const trialExpired = accessStatus !== 'trial' && accessStatus !== 'pro';
+  const { guardAction, showUpgradeModal, closeUpgradeModal } = useActionGuard();
 
   useEffect(() => {
     if (session?.user.id) {
@@ -444,7 +447,9 @@ export default function AIScreen() {
 
   const toggleState = () => {
     if (state === 'idle') {
-      startRecording();
+      guardAction(() => {
+        startRecording();
+      });
     } else if (state === 'listening') {
       stopRecording();
     } else if (state === 'speaking') {
@@ -511,6 +516,14 @@ export default function AIScreen() {
           </TouchableOpacity>
         </View>
 
+        <UpgradeModal
+          visible={showUpgradeModal}
+          onClose={closeUpgradeModal}
+          onUpgrade={() => {
+            closeUpgradeModal();
+            router.push('/upgrade' as any);
+          }}
+        />
       </View>
       </SafeAreaView>
     </View>

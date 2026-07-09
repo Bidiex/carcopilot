@@ -8,7 +8,7 @@ export function useUsers() {
   const [loading, setLoading] = useState(true);
   
   const [search, setSearch] = useState('');
-  const [planFilter, setPlanFilter] = useState<string>('all');
+  const [accessFilter, setAccessFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
@@ -23,8 +23,8 @@ export function useUsers() {
         query = query.ilike('name', `%${search}%`);
       }
 
-      if (planFilter && planFilter !== 'all') {
-        query = query.eq('plan', planFilter);
+      if (accessFilter && accessFilter !== 'all') {
+        query = query.eq('access_status', accessFilter);
       }
 
       const from = (page - 1) * pageSize;
@@ -43,24 +43,24 @@ export function useUsers() {
     } finally {
       setLoading(false);
     }
-  }, [search, planFilter, page]);
+  }, [search, accessFilter, page]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const updateUserPlan = async (userId: string, newPlan: string) => {
+  const updateUserAccess = async (userId: string, newAccess: string) => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ plan: newPlan })
+        .update({ access_status: newAccess })
         .eq('id', userId);
         
       if (error) throw error;
       await fetchUsers(); // refresh
       return true;
     } catch (error) {
-      console.error('Error updating plan:', error);
+      console.error('Error updating access status:', error);
       return false;
     }
   };
@@ -71,12 +71,12 @@ export function useUsers() {
     loading,
     search,
     setSearch,
-    planFilter,
-    setPlanFilter,
+    accessFilter,
+    setAccessFilter,
     page,
     setPage,
     pageSize,
-    updateUserPlan,
+    updateUserAccess,
     refresh: fetchUsers
   };
 }

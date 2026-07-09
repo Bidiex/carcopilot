@@ -10,8 +10,8 @@ import { useRouter } from "expo-router";
 
 const { width: screenWidth } = Dimensions.get("window");
 // Screen padding is Layout.screenPadding (20), so content width is screenWidth - 40.
-// Card width is slightly smaller to hint there's more.
-const CARD_WIDTH = screenWidth - 40 - 24;
+// Card takes the full width available.
+const CARD_WIDTH = screenWidth - 40;
 const PRIMARY_300 = "#8080FF";
 
 interface InsightsCardProps {
@@ -110,27 +110,15 @@ function SkeletonLoader() {
 export function InsightsCard({ insights, hasSavedInsights, loading, onSaveInsight, onUnsaveInsight }: InsightsCardProps) {
   const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
-  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Limpiar timer si el usuario toca la lista
-  const handleScrollBeginDrag = () => {
-    setIsAutoScrolling(false);
-  };
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      setCurrentIndex(viewableItems[0].index);
+    }
+  }).current;
 
-  useEffect(() => {
-    if (!insights || insights.length <= 1 || !isAutoScrolling) return;
-
-    let currentIndex = 0;
-    const interval = setInterval(() => {
-      currentIndex = (currentIndex + 1) % insights.length;
-      flatListRef.current?.scrollToIndex({
-        index: currentIndex,
-        animated: true,
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [insights, isAutoScrolling]);
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   if (loading) {
     return <SkeletonLoader />;
@@ -180,9 +168,21 @@ export function InsightsCard({ insights, hasSavedInsights, loading, onSaveInsigh
           <Ionicons name="sparkles" size={18} color={Colors.primary500} />
           <Text variant="sectionTitle" color="gray900" weight="700">COPILOTO IA</Text>
         </View>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/saved-insights" as any)}>
-          <Text variant="body" color="primary500" weight="600">Ver todas</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {insights && insights.length > 1 && (
+            <View style={styles.paginationDotsContainer}>
+              {insights.map((_, i) => (
+                <View 
+                  key={i} 
+                  style={[styles.dot, currentIndex === i && styles.activeDot]} 
+                />
+              ))}
+            </View>
+          )}
+          <TouchableOpacity activeOpacity={0.7} onPress={() => router.push("/saved-insights" as any)}>
+            <Text variant="body" color="primary500" weight="600">Ver todas</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {(!insights || insights.length === 0) ? (
@@ -200,14 +200,13 @@ export function InsightsCard({ insights, hasSavedInsights, loading, onSaveInsigh
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           horizontal
+          pagingEnabled
           showsHorizontalScrollIndicator={false}
-          snapToInterval={CARD_WIDTH + Spacing.sm}
-          decelerationRate="fast"
-          onScrollBeginDrag={handleScrollBeginDrag}
-          // Evita error visual al scrollear rápido si la lista es corta
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
           getItemLayout={(data, index) => ({
-            length: CARD_WIDTH + Spacing.sm,
-            offset: (CARD_WIDTH + Spacing.sm) * index,
+            length: CARD_WIDTH,
+            offset: CARD_WIDTH * index,
             index,
           })}
         />
@@ -232,9 +231,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.xs,
   },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  paginationDotsContainer: {
+    flexDirection: "row",
+    marginRight: Spacing.md,
+    gap: 4,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.gray300,
+  },
+  activeDot: {
+    width: 16,
+    backgroundColor: Colors.primary500,
+  },
   insightCard: {
     width: CARD_WIDTH,
-    marginRight: Spacing.sm,
     padding: Spacing.md,
     borderRadius: Radius.lg,
     borderWidth: 1,

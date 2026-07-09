@@ -3,11 +3,11 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/types/app';
 import {
-  PlanStatus,
-  getPlanStatus,
+  AccessStatus,
+  getAccessStatus,
   getTrialDaysRemaining,
   canPerformActionsForProfile,
-} from '@/utils/planUtils';
+} from '@/utils/accessUtils';
 import { registerPushToken } from '@/utils/registerPushToken';
 
 type AuthContextType = {
@@ -17,7 +17,7 @@ type AuthContextType = {
   signOut: () => Promise<void>;
   // Plan & Profile
   profile: Profile | null;
-  planStatus: PlanStatus;
+  accessStatus: AccessStatus;
   canPerformActions: boolean;
   trialDaysRemaining: number;
   refreshProfile: () => Promise<void>;
@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Calcular valores derivados del plan
-  const planStatus: PlanStatus = profile ? getPlanStatus(profile) : 'expired';
+  const accessStatus: AccessStatus = profile ? getAccessStatus(profile) : 'expired';
   const canPerformActions: boolean = profile
     ? canPerformActionsForProfile(profile)
     : false;
@@ -118,7 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         signOut,
         profile,
-        planStatus,
+        accessStatus,
         canPerformActions,
         trialDaysRemaining,
         refreshProfile,

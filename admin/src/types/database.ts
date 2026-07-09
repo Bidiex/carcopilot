@@ -2,8 +2,8 @@ export interface Profile {
   id: string;
   name: string | null;
   avatar_url: string | null;
-  plan: 'free' | 'trial' | 'pro' | 'expired' | string;
-  plan_expires_at: string | null;
+  access_status: 'free' | 'trial' | 'pro' | 'expired' | string;
+  access_expires_at: string | null;
   created_at: string;
   trial_started_at: string | null;
 }

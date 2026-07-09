@@ -6,7 +6,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Table } from '../components/ui/Table';
 import type { Column } from '../components/ui/Table';
-import { Modal } from '../components/ui/Modal';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { usePromoSplashes } from '../hooks/usePromoSplashes';
 import type { PromoSplash } from '../types/database';
 import { Plus, Trash2 } from 'lucide-react';
@@ -107,23 +107,15 @@ export function PromoSplashes() {
         )}
       </Card>
 
-      <Modal 
+      <ConfirmModal 
         isOpen={deleteModalOpen} 
         onClose={() => setDeleteModalOpen(false)} 
+        onConfirm={executeDelete}
         title="Eliminar Splash Promocional"
-      >
-        <p className="text-gray-600 mb-6">
-          ¿Estás seguro de que deseas eliminar este Splash Promocional? Esta acción no se puede deshacer.
-        </p>
-        <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>
-            Cancelar
-          </Button>
-          <Button variant="danger" onClick={executeDelete}>
-            Eliminar
-          </Button>
-        </div>
-      </Modal>
+        message="¿Estás seguro de que deseas eliminar este Splash Promocional? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        isDestructive={true}
+      />
     </AdminLayout>
   );
 }

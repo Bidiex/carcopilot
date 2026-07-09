@@ -31,7 +31,7 @@ export default function TabLayout() {
   useStartupRecalculation();
   useStartupInsights();
 
-  const { planStatus, trialDaysRemaining, user, profile, refreshProfile } = useAuth();
+  const { accessStatus, trialDaysRemaining, user, profile, refreshProfile } = useAuth();
   const [trialModalVisible, setTrialModalVisible] = useState(true);
 
   // Activar trial_started_at para usuarios que llegaron por verificación de email
@@ -42,7 +42,7 @@ export default function TabLayout() {
         .from('profiles')
         .update({
           trial_started_at: new Date().toISOString(),
-          plan: 'trial',
+          access_status: 'trial',
         })
         .eq('id', user.id)
         .then(() => refreshProfile());
@@ -52,7 +52,7 @@ export default function TabLayout() {
   return (
     <>
       <TrialModal
-        visible={planStatus === 'trial' && trialModalVisible}
+        visible={accessStatus === 'trial' && trialModalVisible}
         daysRemaining={trialDaysRemaining}
         onClose={() => setTrialModalVisible(false)}
       />

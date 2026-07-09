@@ -20,7 +20,6 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout, Radius } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { Plus, Trash2, Wrench } from "lucide-react-native";
 import { ChronologyWarningModal } from "@/components/ChronologyWarningModal";
 import { checkChronologyBreak } from "@/lib/chronology";
 import { MAINTENANCE_CATEGORIES, MOTO_MAINTENANCE_CATEGORIES, getCategoryByItem } from "@/constants/maintenance";
@@ -296,7 +295,7 @@ export default function MaintenanceEditScreen() {
               Editar Mantenimiento
             </Text>
             <TouchableOpacity activeOpacity={0.7} onPress={handleDelete} style={styles.deleteButton}>
-              <Trash2 color={Colors.danger} size={24} strokeWidth={1.5} />
+              <Ionicons name="trash-outline" color={Colors.danger} size={24} />
             </TouchableOpacity>
           </View>
 
@@ -330,7 +329,7 @@ export default function MaintenanceEditScreen() {
 
             <View style={styles.tallerInputContainer}>
               <View style={styles.tallerIconBox}>
-                <Wrench color={Colors.gray500} size={20} strokeWidth={1.5} />
+                <Ionicons name="build-outline" color={Colors.gray500} size={20} />
               </View>
               <View style={{ flex: 1 }}>
                 <Input
@@ -351,7 +350,7 @@ export default function MaintenanceEditScreen() {
 
             <View style={styles.divider} />
 
-            <Text variant="heading3" color="gray900" weight="700" style={styles.sectionTitle}>
+            <Text variant="heading2" color="gray900" weight="700" style={styles.sectionTitle}>
               Trabajos Realizados
             </Text>
 
@@ -371,7 +370,7 @@ export default function MaintenanceEditScreen() {
                     </Text>
                     {maintenanceItems.length > 1 && (
                       <TouchableOpacity onPress={() => removeItem(index)} hitSlop={10}>
-                        <Trash2 color={Colors.danger} size={18} strokeWidth={1.5} />
+                        <Ionicons name="trash-outline" color={Colors.danger} size={18} />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -418,7 +417,7 @@ export default function MaintenanceEditScreen() {
             })}
 
             <TouchableOpacity style={styles.addButton} onPress={addItem} activeOpacity={0.7}>
-              <Plus color={Colors.primary600} size={20} strokeWidth={1.5} />
+              <Ionicons name="add" color={Colors.primary600} size={20} />
               <Text variant="body" color="primary600" weight="600" style={styles.addButtonText}>
                 Agregar trabajo
               </Text>
@@ -543,7 +542,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     marginBottom: Spacing.lg,
     borderWidth: 1,
-    borderColor: Colors.primary100,
+    borderColor: Colors.primary200,
     borderStyle: "dashed",
   },
   addButtonText: {

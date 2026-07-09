@@ -6,12 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Car,
-  Bell,
-  Mic,
-  Tag,
-} from 'lucide-react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/Typography';
 import { Button } from '@/components/Button';
 import { Colors, Spacing, Radius, Shadows } from '@/constants/theme';
@@ -24,22 +19,22 @@ type UpgradeModalProps = {
 
 const BENEFITS = [
   {
-    icon: Car,
+    icon: 'car-outline' as const,
     color: Colors.primary500,
     text: 'Vehículos ilimitados',
   },
   {
-    icon: Tag,
+    icon: 'pricetag-outline' as const,
     color: Colors.primary500,
     text: 'Todas las categorías de gasto',
   },
   {
-    icon: Bell,
+    icon: 'notifications-outline' as const,
     color: Colors.warning,
     text: 'Alertas de vencimiento (SOAT, tecnomecánica, impuestos)',
   },
   {
-    icon: Mic,
+    icon: 'mic-outline' as const,
     color: Colors.primary500,
     text: 'Asistente de IA con voz',
   },
@@ -91,10 +86,10 @@ export function UpgradeModal({ visible, onClose, onUpgrade }: UpgradeModalProps)
           <View style={styles.body}>
             {/* Beneficios */}
             <View style={styles.benefitsList}>
-              {BENEFITS.map(({ icon: Icon, color, text }) => (
+              {BENEFITS.map(({ icon, color, text }) => (
                 <View key={text} style={styles.benefitRow}>
                   <View style={[styles.benefitIcon, { backgroundColor: `${color}14` }]}>
-                    <Icon size={18} color={color} strokeWidth={1.5} />
+                    <Ionicons name={icon} size={18} color={color} />
                   </View>
                   <Text
                     variant="body"

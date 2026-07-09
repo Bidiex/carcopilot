@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactECharts from 'echarts-for-react';
 import { AdminLayout } from '../components/layout/AdminLayout';
 import { useDashboardMetrics } from '../hooks/useDashboardMetrics';
@@ -70,7 +69,7 @@ export function Dashboard() {
     },
     series: [
       {
-        name: 'Distribución por Plan',
+        name: 'Distribución por Estado',
         type: 'pie',
         radius: ['40%', '70%'],
         avoidLabelOverlap: false,
@@ -174,7 +173,7 @@ export function Dashboard() {
             </Card>
 
             <Card>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribución por Plan</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribución por Estado</h3>
               {planDistribution.length > 0 ? (
                 <ReactECharts option={planChartOptions} style={{ height: '350px', width: '100%' }} />
               ) : (

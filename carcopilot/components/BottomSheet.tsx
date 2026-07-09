@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -7,6 +7,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  PanResponder,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, Radius } from '@/constants/theme';
@@ -25,6 +27,49 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   title,
   children,
 }) => {
+  const panY = useRef(new Animated.Value(0)).current;
+
+  const resetPositionAnim = Animated.timing(panY, {
+    toValue: 0,
+    duration: 300,
+    useNativeDriver: true,
+  });
+
+  const closeAnim = Animated.timing(panY, {
+    toValue: 1000, // Slide down out of screen
+    duration: 300,
+    useNativeDriver: true,
+  });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 150 || gestureState.vy > 1.5) {
+          closeAnim.start(() => {
+            onClose();
+            panY.setValue(0);
+          });
+        } else {
+          resetPositionAnim.start();
+        }
+      },
+    })
+  ).current;
+
+  // Reset panY when modal opens
+  useEffect(() => {
+    if (visible) {
+      panY.setValue(0);
+    }
+  }, [visible]);
+
   return (
     <Modal
       visible={visible}
@@ -42,14 +87,19 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             activeOpacity={1} 
             onPress={onClose} 
           />
-          <View style={styles.content}>
-            <View style={styles.header}>
-              <Text variant="heading2" color="gray900" weight="700">
-                {title}
-              </Text>
-              <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color={Colors.gray900} />
-              </TouchableOpacity>
+          <Animated.View style={[styles.content, { transform: [{ translateY: panY }] }]}>
+            <View {...panResponder.panHandlers}>
+              <View style={styles.dragHandleContainer}>
+                <View style={styles.dragHandle} />
+              </View>
+              <View style={styles.header}>
+                <Text variant="heading2" color="gray900" weight="700">
+                  {title}
+                </Text>
+                <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.closeButton}>
+                  <Ionicons name="close" size={24} color={Colors.gray900} />
+                </TouchableOpacity>
+              </View>
             </View>
             <ScrollView 
               showsVerticalScrollIndicator={false}
@@ -58,7 +108,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
             >
               {children}
             </ScrollView>
-          </View>
+          </Animated.View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -79,6 +129,18 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: Radius.xl,
     borderTopRightRadius: Radius.xl,
     maxHeight: '90%',
+  },
+  dragHandleContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
+  },
+  dragHandle: {
+    width: 40,
+    height: 5,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.gray300,
   },
   header: {
     flexDirection: 'row',

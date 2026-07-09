@@ -385,7 +385,7 @@ export default function OnboardingScreen() {
           .from('profiles')
           .update({
             trial_started_at: new Date().toISOString(),
-            plan: 'trial',
+            access_status: 'trial',
           })
           .eq('id', data.user.id);
 

@@ -38,14 +38,14 @@ export function UserDetail() {
     }
   };
 
-  const updatePlan = async (newPlan: string) => {
+  const updateAccess = async (newAccess: string) => {
     if (!id) return;
     setUpdating(true);
     try {
-      await supabase.from('profiles').update({ plan: newPlan }).eq('id', id);
+      await supabase.from('profiles').update({ access_status: newAccess }).eq('id', id);
       await fetchUserDetails();
     } catch (error) {
-      console.error('Error updating plan:', error);
+      console.error('Error updating access_status:', error);
     } finally {
       setUpdating(false);
     }
@@ -88,19 +88,19 @@ export function UserDetail() {
             </div>
             
             <div className="border-t border-gray-100 pt-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Gestión de Plan</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Gestión de Acceso</h3>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-sm text-gray-600">Plan Actual:</span>
+                <span className="text-sm text-gray-600">Estado Actual:</span>
                 <Badge variant={
-                  profile.plan === 'pro' ? 'success' : 
-                  profile.plan === 'trial' ? 'warning' : 'default'
-                }>{profile.plan?.toUpperCase() || 'N/A'}</Badge>
+                  profile.access_status === 'pro' ? 'success' : 
+                  profile.access_status === 'trial' ? 'warning' : 'default'
+                }>{profile.access_status?.toUpperCase() || 'N/A'}</Badge>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="secondary" size="sm" onClick={() => updatePlan('free')} disabled={updating}>Free</Button>
-                <Button variant="secondary" size="sm" onClick={() => updatePlan('trial')} disabled={updating}>Trial</Button>
-                <Button variant="primary" size="sm" onClick={() => updatePlan('pro')} disabled={updating}>Pro</Button>
-                <Button variant="danger" size="sm" onClick={() => updatePlan('expired')} disabled={updating}>Expired</Button>
+                <Button variant="secondary" size="sm" onClick={() => updateAccess('free')} disabled={updating}>Free</Button>
+                <Button variant="secondary" size="sm" onClick={() => updateAccess('trial')} disabled={updating}>Trial</Button>
+                <Button variant="primary" size="sm" onClick={() => updateAccess('pro')} disabled={updating}>Pro</Button>
+                <Button variant="danger" size="sm" onClick={() => updateAccess('expired')} disabled={updating}>Expired</Button>
               </div>
             </div>
           </Card>

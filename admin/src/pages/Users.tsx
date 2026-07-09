@@ -8,16 +8,16 @@ import { Input } from '../components/ui/Input';
 import type { ProfileWithVehicleCount } from '../types/database';
 
 export function Users() {
-  const { users, loading, search, setSearch, planFilter, setPlanFilter } = useUsers();
+  const { users, loading, search, setSearch, accessFilter, setAccessFilter } = useUsers();
   const navigate = useNavigate();
 
   const columns: Column<ProfileWithVehicleCount>[] = [
     { header: 'Nombre', accessor: (p) => <span className="font-medium">{p.name || 'Sin nombre'}</span> },
     { 
-      header: 'Plan', 
+      header: 'Estado Acceso', 
       accessor: (p) => {
         const variants: Record<string, any> = { free: 'default', trial: 'warning', pro: 'success', expired: 'danger' };
-        return <Badge variant={variants[p.plan] || 'default'}>{p.plan.toUpperCase()}</Badge>;
+        return <Badge variant={variants[p.access_status] || 'default'}>{p.access_status?.toUpperCase()}</Badge>;
       }
     },
     { header: 'Vehículos', accessor: (p) => p.vehicles?.[0]?.count || 0 },
@@ -35,10 +35,10 @@ export function Users() {
         />
         <select 
           className="px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-white"
-          value={planFilter}
-          onChange={e => setPlanFilter(e.target.value)}
+          value={accessFilter}
+          onChange={e => setAccessFilter(e.target.value)}
         >
-          <option value="all">Todos los planes</option>
+          <option value="all">Todos los estados</option>
           <option value="free">Free</option>
           <option value="trial">Trial</option>
           <option value="pro">Pro</option>

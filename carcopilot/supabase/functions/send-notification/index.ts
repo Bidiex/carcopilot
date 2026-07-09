@@ -34,9 +34,9 @@ serve(async (req: Request) => {
     let profilesQuery = supabase.from('profiles').select('id')
 
     if (notification.segment === 'trial') {
-      profilesQuery = profilesQuery.eq('plan', 'trial')
+      profilesQuery = profilesQuery.eq('access_status', 'trial')
     } else if (notification.segment === 'pro') {
-      profilesQuery = profilesQuery.eq('plan', 'pro')
+      profilesQuery = profilesQuery.eq('access_status', 'pro')
     } else if (notification.segment === 'city' && notification.segment_value) {
       profilesQuery = profilesQuery.eq('city', notification.segment_value)
     }

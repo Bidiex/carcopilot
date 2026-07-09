@@ -8,6 +8,7 @@ import type { Column } from '../components/ui/Table';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Plus, Send } from 'lucide-react';
 
 export function Notifications() {
@@ -91,23 +92,14 @@ export function Notifications() {
       )}
 
       {/* Confirm Modal */}
-      <Modal 
+      <ConfirmModal 
         isOpen={confirmModal.isOpen} 
         onClose={() => setConfirmModal({isOpen: false, id: null})} 
+        onConfirm={executeSendNow}
         title="Confirmar Envío"
-      >
-        <p className="text-gray-600 mb-6">
-          ¿Estás seguro de que quieres enviar esta notificación a todos los usuarios que apliquen AHORA MISMO?
-        </p>
-        <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setConfirmModal({isOpen: false, id: null})}>
-            Cancelar
-          </Button>
-          <Button variant="primary" onClick={executeSendNow}>
-            Enviar Notificación
-          </Button>
-        </div>
-      </Modal>
+        message="¿Estás seguro de que quieres enviar esta notificación a todos los usuarios que apliquen AHORA MISMO?"
+        confirmText="Enviar Notificación"
+      />
 
       {/* Result Modal */}
       <Modal 
@@ -115,9 +107,9 @@ export function Notifications() {
         onClose={() => setResultModal({...resultModal, isOpen: false})} 
         title={resultModal.title}
       >
-        <p className="text-gray-600 mb-6">{resultModal.message}</p>
-        <div className="flex justify-end">
-          <Button onClick={() => setResultModal({...resultModal, isOpen: false})}>
+        <div className="flex flex-col items-center text-center">
+          <p className="text-gray-600 mb-6">{resultModal.message}</p>
+          <Button className="w-full sm:w-auto" onClick={() => setResultModal({...resultModal, isOpen: false})}>
             Entendido
           </Button>
         </div>

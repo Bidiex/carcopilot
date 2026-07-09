@@ -1,6 +1,6 @@
 import { Modal, View, Pressable, StyleSheet, Linking } from 'react-native'
 import { Image } from 'expo-image'
-import { X } from 'lucide-react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import type { PromoSplash } from '@/types/app'
 import { Spacing } from '@/constants/theme'
@@ -45,7 +45,7 @@ export function PromoSplashOverlay({ splash, onClose }: Props) {
         />
 
         <Pressable style={styles.closeButton} onPress={onClose}>
-          <X size={24} color="#FFFFFF" strokeWidth={2} />
+          <Ionicons name="close" size={24} color="#FFFFFF" />
         </Pressable>
 
         <View style={styles.bottomContent}>

@@ -35,7 +35,7 @@ export function useDashboardMetrics() {
       const { count: premiumCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .eq('plan', 'pro');
+        .eq('access_status', 'pro');
         
       setPremiumUsers(premiumCount || 0);
 
@@ -49,12 +49,12 @@ export function useDashboardMetrics() {
       // 4. Growth Data & Plan Distribution
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('created_at, plan');
+        .select('created_at, access_status');
 
       if (profiles) {
         // Plan Distribution
         const planCounts = profiles.reduce((acc, p) => {
-          const plan = p.plan || 'free'; // default to free if null
+          const plan = p.access_status || 'free'; // default to free if null
           acc[plan] = (acc[plan] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
@@ -76,7 +76,6 @@ export function useDashboardMetrics() {
         }, {} as Record<string, number>);
 
         const sortedMonths = Object.keys(growthCounts).sort();
-        let cumulative = 0;
         // Or we can do cumulative sum. The user might want cumulative or per month. Let's do per month, 
         // as new user acquisition is a standard metric.
         const growth = sortedMonths.map(month => ({

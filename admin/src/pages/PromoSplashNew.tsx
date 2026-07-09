@@ -229,9 +229,9 @@ export function PromoSplashNew() {
         onClose={() => setAlertModal({...alertModal, isOpen: false})} 
         title={alertModal.title}
       >
-        <p className="text-gray-600 mb-6">{alertModal.message}</p>
-        <div className="flex justify-end">
-          <Button onClick={() => setAlertModal({...alertModal, isOpen: false})}>
+        <div className="flex flex-col items-center text-center">
+          <p className="text-gray-600 mb-6">{alertModal.message}</p>
+          <Button className="w-full sm:w-auto" onClick={() => setAlertModal({...alertModal, isOpen: false})}>
             Entendido
           </Button>
         </div>

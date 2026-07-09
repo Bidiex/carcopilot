@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
@@ -60,6 +61,9 @@ export default function HomeScreen() {
   const [recentLogs, setRecentLogs] = useState<any[]>(dashboardCache?.recentLogs || []);
   const [loading, setLoading] = useState(vehicles.length === 0);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // New metrics states
   const [monthlyStats, setMonthlyStats] = useState(dashboardCache?.monthlyStats || { total: 0, fuel: 0, maint: 0, tax: 0, other: 0 });
@@ -250,14 +254,22 @@ export default function HomeScreen() {
         } catch (e) {
           if (isMounted) setFetchError("No se pudieron cargar los datos. Toca para reintentar.");
         } finally {
-          if (isMounted) setLoading(false);
+          if (isMounted) {
+            setLoading(false);
+            setRefreshing(false);
+          }
         }
       };
 
       loadDashboardData();
       return () => { isMounted = false; };
-    }, [user, selectedVehicleId])
+    }, [user, selectedVehicleId, refreshTrigger])
   );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
 
   useEffect(() => {
     // Pedir permisos de notificaciones 1.5s después de montar el Dashboard
@@ -354,7 +366,18 @@ export default function HomeScreen() {
           <Text variant="caption" color="primary500" weight="600">Reintentar</Text>
         </TouchableOpacity>
       )}
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={[Colors.primary500]} 
+            tintColor={Colors.primary500} 
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <View>

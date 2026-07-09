@@ -17,7 +17,7 @@ import * as LocalAuthentication from "expo-local-authentication";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function AccountScreen() {
-  const { user, signOut, planStatus, trialDaysRemaining, profile } = useAuth();
+  const { user, signOut, accessStatus, trialDaysRemaining, profile } = useAuth();
   const { showAlert } = useAlert();
   const router = useRouter();
 
@@ -125,8 +125,8 @@ export default function AccountScreen() {
   };
 
   let proDaysRemaining = 0;
-  if (planStatus === 'active' && profile?.plan_expires_at) {
-    const diff = new Date(profile.plan_expires_at).getTime() - new Date().getTime();
+  if (accessStatus === 'pro' && profile?.access_expires_at) {
+    const diff = new Date(profile.access_expires_at).getTime() - new Date().getTime();
     proDaysRemaining = Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
   }
 
@@ -169,24 +169,24 @@ export default function AccountScreen() {
             <View style={styles.planHighlightRow}>
               <View style={styles.planDetails}>
                 <Text variant="smallLabel" color="gray500" style={styles.planOverline}>
-                  PLAN ACTUAL
+                  ESTADO DE ACCESO
                 </Text>
-                <Text variant="body" color={planStatus === 'expired' ? 'danger' : 'gray900'} weight="700">
-                  {planStatus === 'trial' ? "Free Trial" : planStatus === 'active' ? "CarCopilot PRO" : "Plan Expirado"}
+                <Text variant="body" color={accessStatus === 'expired' ? 'danger' : 'gray900'} weight="700">
+                  {accessStatus === 'trial' ? "Free Trial" : accessStatus === 'pro' ? "CarCopilot PRO" : "Plan Expirado"}
                 </Text>
-                <Text variant="caption" color={planStatus === 'expired' ? 'danger' : 'gray500'} style={{ marginTop: 2 }}>
-                  {planStatus === 'trial' ? `${trialDaysRemaining} días restantes` : planStatus === 'active' ? `${proDaysRemaining} días restantes` : "Renueva para recuperar el acceso"}
+                <Text variant="caption" color={accessStatus === 'expired' ? 'danger' : 'gray500'} style={{ marginTop: 2 }}>
+                  {accessStatus === 'trial' ? `${trialDaysRemaining} días restantes` : accessStatus === 'pro' ? `${proDaysRemaining} días restantes` : "Renueva para recuperar el acceso"}
                 </Text>
               </View>
               
-              {planStatus !== 'active' ? (
+              {accessStatus !== 'pro' ? (
                 <TouchableOpacity 
                   activeOpacity={0.7} 
                   style={styles.upgradeOutlineButton}
                   onPress={() => router.push('/upgrade' as any)}
                 >
                   <Text variant="smallLabel" color="primary500" weight="700">
-                    {planStatus === 'expired' ? "RENOVAR" : "VOLVERME PRO"}
+                    {accessStatus === 'expired' ? "RENOVAR" : "VOLVERME PRO"}
                   </Text>
                 </TouchableOpacity>
               ) : (

@@ -1,24 +1,24 @@
 import type { Profile } from '@/types/app';
 
-export type PlanStatus = 'trial' | 'pro' | 'expired';
+export type AccessStatus = 'trial' | 'pro' | 'expired';
 
 const TRIAL_DAYS = 15;
 
 /**
- * Calcula el estado actual del plan basado en los datos del perfil.
+ * Calcula el estado actual de acceso basado en los datos del perfil.
  * Esta es la fuente de verdad — ningún componente debe calcular esto inline.
  */
-export function getPlanStatus(profile: Profile): PlanStatus {
+export function getAccessStatus(profile: Profile): AccessStatus {
   // Suscripción Pro vigente
-  if (profile.plan === 'pro' && profile.plan_expires_at) {
-    const expiresAt = new Date(profile.plan_expires_at);
+  if (profile.access_status === 'pro' && profile.access_expires_at) {
+    const expiresAt = new Date(profile.access_expires_at);
     if (expiresAt > new Date()) return 'pro';
     // Pro expirado
     return 'expired';
   }
 
   // Trial activo
-  if (profile.plan === 'trial' && profile.trial_started_at) {
+  if (profile.access_status === 'trial' && profile.trial_started_at) {
     const trialStart = new Date(profile.trial_started_at);
     const now = new Date();
     const daysDiff = Math.floor(
@@ -29,7 +29,7 @@ export function getPlanStatus(profile: Profile): PlanStatus {
   }
 
   // Fallback para valor legacy 'free' (registros pre-migración)
-  if (profile.plan === 'free') return 'trial';
+  if (profile.access_status === 'free') return 'trial';
 
   return 'expired';
 }
@@ -39,7 +39,7 @@ export function getPlanStatus(profile: Profile): PlanStatus {
  */
 export function getTrialDaysRemaining(profile: Profile): number {
   if (
-    (profile.plan !== 'trial' && profile.plan !== 'free') ||
+    (profile.access_status !== 'trial' && profile.access_status !== 'free') ||
     !profile.trial_started_at
   )
     return 0;
@@ -55,15 +55,15 @@ export function getTrialDaysRemaining(profile: Profile): number {
  * Verifica si el usuario puede realizar acciones CUD (crear, editar, eliminar).
  */
 export function canPerformActionsForProfile(profile: Profile): boolean {
-  const status = getPlanStatus(profile);
+  const status = getAccessStatus(profile);
   return status === 'trial' || status === 'pro';
 }
 
 /**
- * Texto descriptivo del estado del plan para la UI.
+ * Texto descriptivo del estado de acceso para la UI.
  */
-export function getPlanLabel(profile: Profile): string {
-  const status = getPlanStatus(profile);
+export function getAccessLabel(profile: Profile): string {
+  const status = getAccessStatus(profile);
   switch (status) {
     case 'trial':
       return `Trial — ${getTrialDaysRemaining(profile)} días restantes`;
