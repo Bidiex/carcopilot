@@ -105,15 +105,36 @@ serve(async (req: Request) => {
         },
       }))
 
-      // Enviar a Expo
-      await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(messages),
-      })
+      const invalidTokens: string[] = []
+
+      try {
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(messages),
+        })
+
+        const result = await response.json()
+        if (result && result.data) {
+          result.data.forEach((receipt: any, index: number) => {
+            if (receipt.status === 'error' && receipt.details && receipt.details.error === 'DeviceNotRegistered') {
+              invalidTokens.push(messages[index].to)
+            }
+          })
+        }
+      } catch (err) {
+        console.error('Error sending push to Expo:', err)
+      }
+
+      if (invalidTokens.length > 0) {
+        await supabase
+          .from('push_tokens')
+          .delete()
+          .in('expo_push_token', invalidTokens)
+      }
     }
 
     // 4. Registrar como enviado

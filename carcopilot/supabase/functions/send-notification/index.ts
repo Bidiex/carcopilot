@@ -88,15 +88,37 @@ serve(async (req: Request) => {
       batches.push(messages.slice(i, i + 100))
     }
 
+    const invalidTokens: string[] = []
+
     for (const batch of batches) {
-      await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(batch),
-      })
+      try {
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(batch),
+        })
+        
+        const result = await response.json()
+        if (result && result.data) {
+          result.data.forEach((receipt: any, index: number) => {
+            if (receipt.status === 'error' && receipt.details && receipt.details.error === 'DeviceNotRegistered') {
+              invalidTokens.push(batch[index].to)
+            }
+          })
+        }
+      } catch (err) {
+        console.error('Error sending batch to Expo:', err)
+      }
+    }
+
+    if (invalidTokens.length > 0) {
+      await supabase
+        .from('push_tokens')
+        .delete()
+        .in('expo_push_token', invalidTokens)
     }
 
     const { data: nextSendData } = await supabase.rpc('calculate_next_send_at', {
