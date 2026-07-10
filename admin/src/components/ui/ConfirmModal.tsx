@@ -29,11 +29,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="">
       <div className="flex flex-col items-center text-center pb-2">
-        <div className={`p-4 mb-4 rounded-full ${isDestructive ? 'bg-red-50 text-red-500' : 'bg-indigo-50 text-indigo-500'}`}>
+        <div className={`p-4 mb-4 rounded-full ${isDestructive ? 'bg-red-50 dark:bg-red-500/10 text-red-500' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500'}`}>
           {isDestructive ? <AlertTriangle size={32} /> : <Info size={32} />}
         </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-3">{title}</h3>
-        <div className="text-gray-500 mb-8">{message}</div>
+        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">{title}</h3>
+        <div className="text-gray-500 dark:text-gray-400 mb-8">{message}</div>
         
         <div className="flex w-full gap-3 flex-col sm:flex-row-reverse">
           <Button 

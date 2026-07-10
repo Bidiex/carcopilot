@@ -118,7 +118,7 @@ export function Notifications() {
   return (
     <AdminLayout title="Notificaciones">
       <div className="flex justify-between items-center mb-6">
-        <p className="text-gray-600">Historial y gestión de notificaciones push.</p>
+        <p className="text-gray-600 dark:text-gray-400">Historial y gestión de notificaciones push.</p>
         <Button onClick={() => navigate('/notifications/new')} className="flex items-center">
           <Plus size={18} className="mr-2" />
           Nueva Notificación
@@ -127,13 +127,13 @@ export function Notifications() {
 
       <div className="flex border-b border-gray-200 mb-6">
         <button
-          className={`py-3 px-6 font-medium text-sm border-b-2 transition-colors ${activeTab === 'promotional' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          className={`py-3 px-6 font-medium text-sm border-b-2 transition-colors ${activeTab === 'promotional' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
           onClick={() => setActiveTab('promotional')}
         >
           Campañas Manuales
         </button>
         <button
-          className={`py-3 px-6 font-medium text-sm border-b-2 transition-colors ${activeTab === 'system' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          className={`py-3 px-6 font-medium text-sm border-b-2 transition-colors ${activeTab === 'system' ? 'border-primary text-primary' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
           onClick={() => setActiveTab('system')}
         >
           Notificaciones de Sistema
@@ -141,7 +141,7 @@ export function Notifications() {
       </div>
 
       {loading ? (
-        <div className="text-center py-10 text-gray-500">Cargando notificaciones...</div>
+        <div className="text-center py-10 text-gray-500 dark:text-gray-400">Cargando notificaciones...</div>
       ) : (
         <Table columns={columns} data={filteredNotifications} />
       )}
@@ -163,7 +163,7 @@ export function Notifications() {
         title={resultModal.title}
       >
         <div className="flex flex-col items-center text-center">
-          <p className="text-gray-600 mb-6">{resultModal.message}</p>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">{resultModal.message}</p>
           <Button className="w-full sm:w-auto" onClick={() => setResultModal({...resultModal, isOpen: false})}>
             Entendido
           </Button>
@@ -183,20 +183,20 @@ export function Notifications() {
             onChange={(e) => setEditTitle(e.target.value)}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Cuerpo de la notificación
             </label>
             <textarea 
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary placeholder-gray-400"
+              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary placeholder-gray-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               rows={4}
               value={editBody}
               onChange={e => setEditBody(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Estado</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Estado</label>
             <select 
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               value={editStatus}
               onChange={(e) => setEditStatus(e.target.value)}
             >

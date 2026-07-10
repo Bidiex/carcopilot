@@ -13,9 +13,9 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col flex-shrink-0">
+    <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 h-screen flex flex-col flex-shrink-0 transition-colors">
       <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight transition-colors">
           Copiloto <span className="text-primary">Admin</span>
         </h2>
       </div>
@@ -29,8 +29,8 @@ export function Sidebar() {
             className={({ isActive }) =>
               `flex items-center px-4 py-3 rounded-xl font-medium transition-colors ${
                 isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
               }`
             }
           >
@@ -40,10 +40,10 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={signOut}
-          className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-600 transition-colors rounded-xl hover:bg-red-50 hover:text-red-600"
+          className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
         >
           <LogOut className="mr-3" size={20} />
           Cerrar sesión

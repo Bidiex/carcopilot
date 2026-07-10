@@ -9,7 +9,7 @@ interface AdminLayoutProps {
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden font-sans transition-colors">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar title={title} />

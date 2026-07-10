@@ -99,11 +99,11 @@ export function NotificationNew() {
             />
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Cuerpo de la notificación ({body.length} caracteres)
               </label>
               <textarea 
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary placeholder-gray-400"
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary placeholder-gray-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 rows={4}
                 value={body}
                 onChange={e => setBody(e.target.value)}
@@ -114,9 +114,9 @@ export function NotificationNew() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Tipo</label>
                 <select 
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={type}
                   onChange={(e: any) => setType(e.target.value)}
                 >
@@ -127,9 +127,9 @@ export function NotificationNew() {
 
               {type === 'system' ? (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Evento de Sistema</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Evento de Sistema</label>
                   <select 
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={triggerEvent}
                     onChange={(e: any) => setTriggerEvent(e.target.value)}
                   >
@@ -140,9 +140,9 @@ export function NotificationNew() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Segmento</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Segmento</label>
                   <select 
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={segment}
                     onChange={(e: any) => setSegment(e.target.value)}
                   >
@@ -159,9 +159,9 @@ export function NotificationNew() {
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Acción al tocar (Destino)</label>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Acción al tocar (Destino)</label>
                     <select 
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                       value={destinationType}
                       onChange={(e: any) => setDestinationType(e.target.value)}
                     >
@@ -192,16 +192,16 @@ export function NotificationNew() {
                       onChange={e => setIsScheduled(e.target.checked)}
                       className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Programar envío de campaña</span>
+                    <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Programar envío de campaña</span>
                   </label>
 
                   {isScheduled && (
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de recurrencia</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Tipo de recurrencia</label>
                           <select 
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                             value={recurrenceType}
                             onChange={(e: any) => setRecurrenceType(e.target.value)}
                           >
@@ -213,9 +213,9 @@ export function NotificationNew() {
 
                         {recurrenceType === 'weekly' && (
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Día de la semana</label>
+                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Día de la semana</label>
                             <select 
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                               value={sendDayOfWeek}
                               onChange={(e: any) => setSendDayOfWeek(Number(e.target.value))}
                             >
