@@ -19,7 +19,7 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Colors, Spacing, Layout } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { scheduleDocumentReminder } from "@/lib/notifications";
+
 import { getColombiaDateString, getColombiaYear, addYearsToDateString } from "@/lib/date";
 import { useActionGuard } from "@/hooks/useActionGuard";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -171,17 +171,7 @@ export default function TaxNewScreen() {
       if (error) {
         showAlert("Error de Creación", error.message, [], "error");
       } else {
-        if (insertedRecord && activeVehicle) {
-          const vehicleName = `${activeVehicle.custom_brand} ${activeVehicle.custom_model}`;
-          const plateStr = activeVehicle.plate || "Sin Placa";
-          await scheduleDocumentReminder(
-            insertedRecord.id,
-            dbType as any,
-            vehicleName,
-            plateStr,
-            expiryDate
-          );
-        }
+        // Notificaciones de vencimiento ahora gestionadas por backend cron
         showAlert(
           "Registro Exitoso",
           "El registro ha sido guardado.",

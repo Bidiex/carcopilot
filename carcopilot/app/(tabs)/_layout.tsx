@@ -52,7 +52,7 @@ export default function TabLayout() {
   return (
     <>
       <TrialModal
-        visible={accessStatus === 'trial' && trialModalVisible}
+        visible={accessStatus === 'trial' && trialModalVisible && trialDaysRemaining < 15}
         daysRemaining={trialDaysRemaining}
         onClose={() => setTrialModalVisible(false)}
       />

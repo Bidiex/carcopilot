@@ -23,6 +23,7 @@ export interface AppNotification {
   end_date?: string | null;
   next_send_at?: string | null;
   last_sent_at?: string | null;
+  trigger_event?: string | null;
 }
 
 export function useNotifications() {
@@ -82,10 +83,27 @@ export function useNotifications() {
     }
   };
 
+  const updateNotification = async (id: string, updates: Partial<AppNotification>) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+      await fetchNotifications();
+      return true;
+    } catch (error) {
+      console.error('Error updating notification:', error);
+      return false;
+    }
+  };
+
   return {
     notifications,
     loading,
     createNotification,
+    updateNotification,
     sendNotificationNow,
     refresh: fetchNotifications
   };

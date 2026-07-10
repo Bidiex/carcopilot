@@ -78,9 +78,14 @@ function RootNavigator() {
         }
       };
 
-      checkAndMigrateVehicle().then(() => {
+      checkAndMigrateVehicle().then(async () => {
         if (inAuthGroup || inOnboarding) {
-          router.replace("/(tabs)");
+          const hasSeenTrial = await AsyncStorage.getItem(`has_seen_trial_${session.user.id}`);
+          if (hasSeenTrial === "true") {
+            router.replace("/(tabs)");
+          } else {
+            router.replace("/trial-explain");
+          }
         }
       });
     }

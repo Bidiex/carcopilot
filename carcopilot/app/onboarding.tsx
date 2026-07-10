@@ -396,9 +396,11 @@ export default function OnboardingScreen() {
             {
               text: "Entrar",
               onPress: async () => {
-                scheduleWelcomeNotification();
                 await refreshProfile();
-                router.replace("/(tabs)");
+                supabase.functions.invoke('trigger-system-notification', {
+                  body: { trigger_event: 'user_welcome', user_id: data.user?.id }
+                });
+                router.replace("/trial-explain");
               },
             },
           ],
@@ -414,7 +416,9 @@ export default function OnboardingScreen() {
             {
               text: "Entendido",
               onPress: () => {
-                scheduleWelcomeNotification();
+                supabase.functions.invoke('trigger-system-notification', {
+                  body: { trigger_event: 'user_welcome', user_id: data.user?.id }
+                });
                 router.replace("/(auth)/login");
               },
             },
